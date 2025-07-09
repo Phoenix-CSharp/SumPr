@@ -9,9 +9,10 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QTabWidget, QWidget, QVB
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
+
 class Class_range:
-    def __init__(self, class_range: str = "1-11"):
-        self.CLASS_RANGE = { "1-11" : 0,
+    CLASS_RANGE = { 
+                        "1-11" : 0,
                         "1-4": 1,
                         "10-11": 2,
                         "1-6": 3,
@@ -23,57 +24,89 @@ class Class_range:
                         "5-8": 9,
                         "1-8": 10,
                         }
+    def __init__(self, class_range: str = "1-11"):
         self.type = self.CLASS_RANGE[class_range]
 
-    def GET(self):
-        """Возвращает установленный при создании экземпляра тип классовых границ"""
-        return self.type
+    def __call__(self, *key, **options) -> int | str | list[int] | None:
+        _key = -1 if len(key) == 0 else key[0]
+        _arg = options.get("arg", 0)
 
-    def get_value(self, key: str) -> int | None:
-        """Возвращает значение по ключу"""
-        if key in self.CLASS_RANGE:
-            return self.CLASS_RANGE[key]
-        return None
+        if _key == -1:
+            return self.type
+        elif _key == -2:
+            for _key, _type in self.CLASS_RANGE.items():
+                if _type == self.type: 
+                    return _key
+        elif _key == 1 and _arg and _arg in self.CLASS_RANGE: 
+            return self.CLASS_RANGE[_arg]
+        elif _key == 2 and _arg in self.CLASS_RANGE.values():
+            for _key, _type in self.CLASS_RANGE.items():
+                if _type == _arg:
+                    return _key
+        elif _key == 3 and _arg in self.CLASS_RANGE.values():
+            for _key, _type in self.CLASS_RANGE.items():
+                if _type == _arg:
+                    return list(map(int, _key.split("-")))
+        else: return None
+        
 
-    def get_key(self, type: int) -> str | None:
-        """Возвращает ключ по значению"""
-        for _key, _type in self.CLASS_RANGE.items():
-            if type == _type:
-                return _key
-        return None
+class Teacher_type:
+    subjects_dic = {
+                        "Учитель математики": ["Математика", "Алгебра", "Геометрия", "Экономика", "ВиС", "Разговоры о важном", "Индивидуальный проект"],
+                        "Учитель русского и литературы": ["Русский язык", "Литература", "Разговоры о важном", "Индивидуальный проект"],
+                        "Учитель физической культуры": ["Физ-ра", "Разговоры о важном"],
+                        "Учитель информатики": ["Информатика", "Разговоры о важном", "Индивидуальный проект"],
+                        "Учитель технологии": ["Технология", "Разговоры о важном"],
+                        "Учитель музыки": ["Музыка", "Разговоры о важном"],
+                        "Учитель географии": ["География", "Разговоры о важном"],
+                        "Учитель биологии": ["Биология", "Разговоры о важном", "Индивидуальный проект"], 
+                        "Учитель химии": ["Химия", "Разговоры о важном", "Индивидуальный проект"],
+                        "Учитель Физики": ["Физика", "Астрономия", "Разговоры о важном", "Индивидуальный проект"],
+                        "Учитель ОБЖ": ["ОБЖ", "Разговоры о важном"],
+                        "Учитель истории и обществознания": ["История", "Обществознание", "Право", "Разговоры о важном", "Индивидуальный проект"],
+                        "Учитель иностранного языка": ["Иностранный язык", "Разговоры о важном", "Индивидуальный проект"],
+                        "Учитель изобразительного искусства": ["ИЗО", "Разговоры о важном", "МХК", "Индивидуальный проект"],
+                        "Учитель начальных классов": ["Русский язык", "Математика", "Труд", "Окружающий мир", "Чтение", "Разговоры о важном"]
+                    }
+                    
+    def __init__(self, type: str):
+        self.type = type
+        self.subjetcs = self.subjects_dic[type]
 
-    def get_int_range_key(self, type: int) -> list[int]:
-        """Возвращает list[int] составленный из нижней и верхней границы классов"""
-        key = self.get_key(type) if self.get_key(type) != None else ""
-        if key == "":
-            return [1, 11]
-        else:
-            return list(map(int, key.split("-")))
-
-
+    def __call__(self, *key):
+        _key = -1 if len(key) == 0 else key[0]
+        if _key == -1: 
+            return self.type
+        else: 
+            return self.subjetcs
+        
 
 class Subject:
-    def __init__(self, name="", hours = 0 , room_type="", class_range: Class_range = Class_range("1-11")):
+    def __init__(self, name: str = "", hours: int = 0 , room_type: str = "", class_range: Class_range = Class_range("1-11")):
         self.name = name
         self.hours = hours
         self.room_type = room_type
         self.class_range = class_range
 
+    def __eq__(self, name: str = ""):
+        return self.name == name if isinstance(name, str) else False
+
 
 class Teacher:
-    def __init__(self, name="", subjects=None):
+    def __init__(self, name: str = "", type: Teacher_type = None):
         self.name = name
-        self.subjects = subjects if subjects else []
+        self.type = type
+        self.subjects = self.type()
 
 
 class Classroom:
-    def __init__(self, number="", room_type=""):
+    def __init__(self, number: str = "", room_type: str =""):
         self.number = number
         self.room_type = room_type
 
 
 class SchoolClass:
-    def __init__(self, name="", subjects=None):
+    def __init__(self, name: str = "", subjects: dict = None):
         self.name = name
         # Словарь предметов: {название предмета: часы в неделю}
         self.subjects = subjects if subjects else {}
@@ -83,7 +116,7 @@ class SchoolClass:
 class Scheduler:
     DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт"]  # Дни недели
     MAX_SLOTS = 7  # Максимальное количество уроков в день
-    MAX_CLASS_LESSONS_PER_DAY = 7  # Максимум уроков в день для класса
+    MAX_CLASS_LESSONS_PER_DAY = 8  # Максимум уроков в день для класса
 
     def __init__(self):
         self.teachers = []
@@ -101,9 +134,9 @@ class Scheduler:
                 if teacher:
                     self.class_teacher_assignments[cls.name][subject] = teacher.name
 
-    def find_teacher_for_subject(self, subject_name):
+    def find_teacher_for_subject(self, subject_name: str) -> str | None:
         """Ищем учителя, который может вести данный предмет."""
-        available_teachers = []
+        available_teachers = [teacher for teacher in self.teachers if subject_name in teacher.subjects]
         for teacher in self.teachers:
             if subject_name in teacher.subjects:
                 available_teachers.append(teacher)
@@ -119,24 +152,10 @@ class Scheduler:
     def find_classroom(self, day, slot, subject_name):
         """Находим подходящий кабинет для предмета"""
         required_type = self.get_room_type_for_subject(subject_name)
-        specialized = []
-        general = []
-
-        for room in self.classrooms:
-            # Для специализированных кабинетов
-            if required_type:
-                if room.room_type == required_type:
-                    specialized.append(room.number)
-            else:
-                # Для обычных кабинетов
-                if not room.room_type:
-                    general.append(room.number)
+        general = [cls for cls in self.classrooms if cls.room_type == required_type]
 
         # Возвращаем первый доступный кабинет
-        if specialized:
-            return specialized[0]
-        if general:
-            return general[0]
+
         return None
 
     def generate_schedule(self):
@@ -349,7 +368,7 @@ class ClassSubjectsDialog(QDialog):
         form_layout = QGridLayout()
 
         self.subject_combo = QComboBox()
-        self.subject_combo.addItems([s.name for s in subjects if self.class_val in range(s.class_range.get_int_range_key(s.class_range.GET())[0], s.class_range.get_int_range_key(s.class_range.GET())[1] + 1)])
+        self.subject_combo.addItems([s.name for s in subjects if self.class_val in range(s.class_range(3, arg = s.class_range())[0], s.class_range(3, arg = s.class_range())[1] + 1)])
         form_layout.addWidget(QLabel("Предмет:"), 0, 0)
         form_layout.addWidget(self.subject_combo, 0, 1)
 
@@ -530,17 +549,19 @@ class MainWindow(QMainWindow):
         form_layout = QHBoxLayout()
 
         self.subject_name_input = QComboBox()
-        self.subject_name_input.addItems(["", "Математика", "Алгебра", "Геометрия", "ВиС", "Информатика", "Окружающий мир", "География",
-                                       "Биология", "Химия", "Физика", "ОБЖ", "Астрономия", "Обществознание", "История", "ОДНКР",
-                                       "Право", "Экономика", "Разговоры о важном", "Русский язык", "Чтение", "Литература", "Иностранный язык",
-                                       "Технология", "ИЗО", "Труд", "Музыка", "Физ-ра", "МХК", "Индивидуальный проект"])
+        self.subject_name_input.addItems([
+                                            "", "Математика", "Алгебра", "Геометрия", "ВиС", "Информатика", "Окружающий мир", "География",
+                                            "Биология", "Химия", "Физика", "ОБЖ", "Астрономия", "Обществознание", "История", "ОДНКР",
+                                            "Право", "Экономика", "Разговоры о важном", "Русский язык", "Чтение", "Литература", "Иностранный язык",
+                                            "Технология", "ИЗО", "Труд", "Музыка", "Физ-ра", "МХК", "Индивидуальный проект"])
         form_layout.addWidget(QLabel("Название предмета:"))
         form_layout.addWidget(self.subject_name_input)
 
         self.room_type_input = QComboBox()
-        self.room_type_input.addItems(["", "Компьютерный класс", "Общепредметный", "Биология", "Химия",
-                                            "Физика", "Астрономия", "Музей", "Актовый зал", "Мастерская",
-                                            "Художественный зал", "Музыка", "Спортзал"])
+        self.room_type_input.addItems([
+                                        "", "Компьютерный класс", "Общепредметный", "Биология", "Химия",
+                                        "Физика", "Астрономия", "Музей", "Актовый зал", "Мастерская",
+                                        "Художественный зал", "Музыка", "Спортзал"])
         form_layout.addWidget(QLabel("Тип кабинета:"))
         form_layout.addWidget(self.room_type_input)
 
@@ -574,9 +595,15 @@ class MainWindow(QMainWindow):
         self.teacher_name_input.setPlaceholderText("ФИО учителя")
         form_layout.addWidget(self.teacher_name_input)
 
-        self.teacher_subjects_input = QLineEdit()
-        self.teacher_subjects_input.setPlaceholderText("Предметы учителя, перечислять при помощи '; '")
-        form_layout.addWidget(self.teacher_subjects_input)
+        self.teacher_type_input = QComboBox()
+        self.teacher_type_input.addItems([
+                                                "Учитель математики", "Учитель русского и литературы", "Учитель физической культуры",
+                                                "Учитель информатики", "Учитель технологии", "Учитель музыки", "Учитель географии",
+                                                "Учитель биологии", "Учитель химии", "Учитель Физики",  "Учитель ОБЖ",
+                                                "Учитель истории и обществознания", "Учитель иностранного языка", "Учитель изобразительного искусства",
+                                                "Учитель начальных классов"])
+        form_layout.addWidget(QLabel("Тип учителя:"))
+        form_layout.addWidget(self.teacher_type_input)
 
         self.add_teacher_btn = QPushButton("Добавить учителя")
         self.add_teacher_btn.clicked.connect(self.add_teacher)
@@ -586,8 +613,8 @@ class MainWindow(QMainWindow):
 
         # Таблица учителей
         self.teachers_table = QTableWidget()
-        self.teachers_table.setColumnCount(3)
-        self.teachers_table.setHorizontalHeaderLabels(["Учитель", "Предметы", "X"])
+        self.teachers_table.setColumnCount(4)
+        self.teachers_table.setHorizontalHeaderLabels(["Учитель", "Тип учителя", "Предметы", "X"])
         self.teachers_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         layout.addWidget(self.teachers_table)
 
@@ -687,7 +714,8 @@ class MainWindow(QMainWindow):
         for i, subject in enumerate(self.scheduler.subjects):
             self.subjects_table.setItem(i, 0, QTableWidgetItem(subject.name))
             self.subjects_table.setItem(i, 1, QTableWidgetItem(subject.room_type))
-            self.subjects_table.setItem(i, 2, QTableWidgetItem(subject.class_range.get_key(subject.class_range.GET())))
+            if subject.name == any(["Физ-ра", "Разговоры о важном", "Русский язык"]): print(subject.class_range())
+            self.subjects_table.setItem(i, 2, QTableWidgetItem(subject.class_range(2, arg = subject.class_range())))
 
             btn = QPushButton("Удалить")
             btn.clicked.connect(lambda _, idx=i: self.delete_subject(idx))
@@ -697,11 +725,12 @@ class MainWindow(QMainWindow):
         self.teachers_table.setRowCount(len(self.scheduler.teachers))
         for i, teacher in enumerate(self.scheduler.teachers):
             self.teachers_table.setItem(i, 0, QTableWidgetItem(teacher.name))
-            self.teachers_table.setItem(i, 1, QTableWidgetItem(", ".join(teacher.subjects)))
+            self.teachers_table.setItem(i, 1, QTableWidgetItem(teacher.type()))
+            self.teachers_table.setItem(i, 2, QTableWidgetItem(", ".join(teacher.type(-2))))
 
             btn = QPushButton("Удалить")
             btn.clicked.connect(lambda _, idx=i: self.delete_teacher(idx))
-            self.teachers_table.setCellWidget(i, 2, btn)
+            self.teachers_table.setCellWidget(i, 3, btn)
 
         # Обновление таблицы кабинетов
         self.classrooms_table.setRowCount(len(self.scheduler.classrooms))
@@ -727,10 +756,10 @@ class MainWindow(QMainWindow):
     def add_subject(self):
         name = self.subject_name_input.currentText() if self.subject_name_input.currentText() != "" else None
         room_type = self.room_type_input.currentText()
-        class_range = self.class_range_input.currentText()
+        class_rng = self.class_range_input.currentText()
 
         if name:
-            self.scheduler.subjects.append(Subject(name, 0, room_type, Class_range(class_range)))
+            self.scheduler.subjects.append(Subject(name, 0, room_type, Class_range(class_rng)))
             self.subject_name_input.setCurrentIndex(0)
             self.room_type_input.setCurrentIndex(0)
             self.class_range_input.setCurrentIndex(0)
@@ -741,23 +770,24 @@ class MainWindow(QMainWindow):
 
     def add_teacher(self):
         name = self.teacher_name_input.text().strip()
-        subjects = self.teacher_subjects_input.text().split("; ")
+        teacher_type = Teacher_type(self.teacher_type_input.currentText())
+        subjects = teacher_type.subjetcs
         n_flag = False
-        s_flag = False
+        t_flag = False
 
         if name and '.' in name and name.count('.') == 2:
             n_flag = True
         else:
             QMessageBox.warning(self, "Ошибка", "Введите ФИО учителя")
 
-        if subjects and len(subjects) > 0:
-            s_flag = True
+        if teacher_type != None:
+            t_flag = True
         else:
-            QMessageBox.warning(self, "Ошибка", "Введите предметы")
+            QMessageBox.warning(self, "Ошибка", "Введите тип учителя")
 
-        if n_flag and s_flag:
-            self.scheduler.teachers.append(Teacher(name, subjects))
-            self.teacher_subjects_input.clear()
+        if n_flag and t_flag:
+            self.scheduler.teachers.append(Teacher(name, teacher_type))
+            self.teacher_type_input.setCurrentText("")
             self.teacher_name_input.clear()
             self.update_tables()
             self.statusBar().showMessage(f"Добавлен учитель: {name}")
@@ -862,9 +892,9 @@ class MainWindow(QMainWindow):
         if file_path:
             data = {
                 "classes": [{"name": cls.name, "subjects": cls.subjects} for cls in self.scheduler.classes],
-                "subjects": [{"name": sub.name, "hours": sub.hours, "room_type": sub.room_type, "class_range": sub.class_range.get_key(sub.class_range.GET())}
+                "subjects": [{"name": sub.name, "hours": sub.hours, "room_type": sub.room_type, "class_range": sub.class_range(2, arg = sub.class_range())}
                              for sub in self.scheduler.subjects],
-                "teachers": [{"name": tch.name, "subjects": tch.subjects} for tch in self.scheduler.teachers],
+                "teachers": [{"name": tch.name, "type": tch.type()} for tch in self.scheduler.teachers],
                 "classrooms": [{"number": room.number, "room_type": room.room_type}
                                for room in self.scheduler.classrooms]
             }
@@ -893,7 +923,7 @@ class MainWindow(QMainWindow):
                 ]
 
                 self.scheduler.teachers = [
-                    Teacher(item["name"], item.get("subjects", [])) for item in data["teachers"]
+                    Teacher(item["name"], Teacher_type(item["type"])) for item in data["teachers"]
                 ]
 
                 self.scheduler.classrooms = [
@@ -943,6 +973,8 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
+    test = Class_range("1-11")
+    print(test(2, arg = test()))
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
