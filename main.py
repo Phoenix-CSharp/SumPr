@@ -1,0 +1,949 @@
+import sys
+import json
+import random
+from collections import defaultdict
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout,
+                             QPushButton, QTableWidget, QTableWidgetItem, QLabel, QLineEdit,
+                             QComboBox, QSpinBox, QFileDialog, QMessageBox, QHeaderView,
+                             QDialog, QDialogButtonBox, QGridLayout)
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
+
+class Class_range:
+    def __init__(self, class_range: str = "1-11"):
+        self.CLASS_RANGE = { "1-11" : 0,
+                        "1-4": 1,
+                        "10-11": 2,
+                        "1-6": 3,
+                        "7-11": 4,
+                        "5-11": 5,
+                        "8-11": 6,
+                        "5-6": 7,
+                        "2-11": 8,
+                        "5-8": 9,
+                        "1-8": 10,
+                        }
+        self.type = self.CLASS_RANGE[class_range]
+
+    def GET(self):
+        """Возвращает установленный при создании экземпляра тип классовых границ"""
+        return self.type
+
+    def get_value(self, key: str) -> int | None:
+        """Возвращает значение по ключу"""
+        if key in self.CLASS_RANGE:
+            return self.CLASS_RANGE[key]
+        return None
+
+    def get_key(self, type: int) -> str | None:
+        """Возвращает ключ по значению"""
+        for _key, _type in self.CLASS_RANGE.items():
+            if type == _type:
+                return _key
+        return None
+
+    def get_int_range_key(self, type: int) -> list[int]:
+        """Возвращает list[int] составленный из нижней и верхней границы классов"""
+        key = self.get_key(type) if self.get_key(type) != None else ""
+        if key == "":
+            return [1, 11]
+        else:
+            return list(map(int, key.split("-")))
+
+
+
+class Subject:
+    def __init__(self, name="", hours = 0 , room_type="", class_range: Class_range = Class_range("1-11")):
+        self.name = name
+        self.hours = hours
+        self.room_type = room_type
+        self.class_range = class_range
+
+
+class Teacher:
+    def __init__(self, name="", subjects=None):
+        self.name = name
+        self.subjects = subjects if subjects else []
+
+
+class Classroom:
+    def __init__(self, number="", room_type=""):
+        self.number = number
+        self.room_type = room_type
+
+
+class SchoolClass:
+    def __init__(self, name="", subjects=None):
+        self.name = name
+        # Словарь предметов: {название предмета: часы в неделю}
+        self.subjects = subjects if subjects else {}
+        self.schedule = {}
+
+
+class Scheduler:
+    DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт"]  # Дни недели
+    MAX_SLOTS = 7  # Максимальное количество уроков в день
+    MAX_CLASS_LESSONS_PER_DAY = 7  # Максимум уроков в день для класса
+
+    def __init__(self):
+        self.teachers = []
+        self.classrooms = []
+        self.subjects = []
+        self.classes = []
+        self.schedule = {}
+        self.class_teacher_assignments = defaultdict(dict)  # {class_name: {subject: teacher_name}}
+
+    def assign_teachers_to_classes(self):
+        """Назначаем учителей на предметы в классах."""
+        for cls in self.classes:
+            for subject in cls.subjects:
+                teacher = self.find_teacher_for_subject(subject)
+                if teacher:
+                    self.class_teacher_assignments[cls.name][subject] = teacher.name
+
+    def find_teacher_for_subject(self, subject_name):
+        """Ищем учителя, который может вести данный предмет."""
+        available_teachers = []
+        for teacher in self.teachers:
+            if subject_name in teacher.subjects:
+                available_teachers.append(teacher)
+        return random.choice(available_teachers) if available_teachers else None
+
+    def get_room_type_for_subject(self, subject_name):
+        """Возвращает тип кабинета для предмета"""
+        for subject in self.subjects:
+            if subject.name == subject_name:
+                return subject.room_type
+        return ""
+
+    def find_classroom(self, day, slot, subject_name):
+        """Находим подходящий кабинет для предмета"""
+        required_type = self.get_room_type_for_subject(subject_name)
+        specialized = []
+        general = []
+
+        for room in self.classrooms:
+            # Для специализированных кабинетов
+            if required_type:
+                if room.room_type == required_type:
+                    specialized.append(room.number)
+            else:
+                # Для обычных кабинетов
+                if not room.room_type:
+                    general.append(room.number)
+
+        # Возвращаем первый доступный кабинет
+        if specialized:
+            return specialized[0]
+        if general:
+            return general[0]
+        return None
+
+    def generate_schedule(self):
+        try:
+            # Назначим учителей на предметы в классах
+            self.assign_teachers_to_classes()
+
+            # Инициализация структур данных
+            schedule = {day: {slot: {} for slot in range(1, self.MAX_SLOTS + 1)} for day in self.DAYS}
+            teacher_schedule = defaultdict(lambda: defaultdict(set))
+            classroom_schedule = defaultdict(lambda: defaultdict(set))
+            class_schedule = defaultdict(lambda: defaultdict(set))
+            subject_schedule = defaultdict(lambda: defaultdict(set))
+
+            # Подготовка уроков для каждого класса
+            class_lessons = defaultdict(list)
+            for cls in self.classes:
+                for subject, hours in cls.subjects.items():
+                    for _ in range(hours):
+                        teacher_name = self.class_teacher_assignments[cls.name].get(subject, "Не назначен")
+                        class_lessons[cls.name].append({
+                            "subject": subject,
+                            "teacher": teacher_name
+                        })
+
+            # Распределение уроков
+            class_groups = list(class_lessons.keys())
+            random.shuffle(class_groups)
+
+            for class_group in class_groups:
+                random.shuffle(class_lessons[class_group])
+
+                for lesson in class_lessons[class_group]:
+                    teacher = lesson["teacher"]
+                    subject = lesson["subject"]
+                    placed = False
+
+                    # Попытка 1: Поставить рядом с существующими уроками
+                    for day in self.DAYS:
+                        if len(class_schedule[class_group][day]) >= self.MAX_CLASS_LESSONS_PER_DAY:
+                            continue
+
+                        busy_slots = class_schedule[class_group][day]
+                        candidate_slots = set()
+                        for slot in busy_slots:
+                            if slot > 1: candidate_slots.add(slot - 1)
+                            if slot < self.MAX_SLOTS: candidate_slots.add(slot + 1)
+                        candidate_slots -= busy_slots
+
+                        for slot in sorted(candidate_slots):
+                            if self.try_place_lesson(
+                                    schedule, teacher_schedule, classroom_schedule,
+                                    class_schedule, subject_schedule,
+                                    class_group, day, slot, teacher, subject
+                            ):
+                                placed = True
+                                break
+                        if placed: break
+
+                    # Попытка 2: Поставить в любой свободный слот
+                    if not placed:
+                        for day in self.DAYS:
+                            if len(class_schedule[class_group][day]) >= self.MAX_CLASS_LESSONS_PER_DAY:
+                                continue
+
+                            for slot in range(1, self.MAX_SLOTS + 1):
+                                if slot in class_schedule[class_group][day]:
+                                    continue
+
+                                if self.try_place_lesson(
+                                        schedule, teacher_schedule, classroom_schedule,
+                                        class_schedule, subject_schedule,
+                                        class_group, day, slot, teacher, subject
+                                ):
+                                    placed = True
+                                    break
+                            if placed: break
+
+                    # Попытка 3: Форсированное размещение
+                    if not placed:
+                        for day in self.DAYS:
+                            for slot in range(1, self.MAX_SLOTS + 1):
+                                if slot in class_schedule[class_group][day]:
+                                    continue
+
+                                # Проверка конфликта предмета
+                                if subject in subject_schedule[(day, slot)]:
+                                    continue
+
+                                # Проверка занятости учителя
+                                if (day, slot) in teacher_schedule[teacher]:
+                                    continue
+
+                                # Поиск свободного кабинета
+                                classroom_found = self.find_classroom(day, slot, subject)
+                                if not classroom_found:
+                                    continue
+
+                                # Проверка занятости кабинета
+                                if (day, slot) in classroom_schedule[classroom_found]:
+                                    continue
+
+                                # Размещаем урок
+                                schedule[day][slot][class_group] = {
+                                    "subject": subject,
+                                    "teacher": teacher,
+                                    "classroom": classroom_found
+                                }
+                                class_schedule[class_group][day].add(slot)
+                                teacher_schedule[teacher][(day, slot)] = class_group
+                                classroom_schedule[classroom_found][(day, slot)] = class_group
+                                subject_schedule[(day, slot)].add(subject)
+                                placed = True
+                                break
+                            if placed: break
+
+                    if not placed:
+                        print(f"Warning! Не удалось разместить урок: {class_group} {subject} {teacher}")
+
+            # Преобразование в формат приложения
+            final_schedule = {}
+            day_map = {'Пн': 1, 'Вт': 2, 'Ср': 3, 'Чт': 4, 'Пт': 5}
+
+            for class_name in class_groups:
+                class_schedule_result = {}
+                for day in self.DAYS:
+                    day_lessons = []
+                    for slot in range(1, self.MAX_SLOTS + 1):
+                        if class_name in schedule[day][slot]:
+                            lesson_data = schedule[day][slot][class_name]
+                            day_lessons.append({
+                                'subject': lesson_data['subject'],
+                                'teacher': lesson_data['teacher'],
+                                'classroom': lesson_data['classroom']
+                            })
+                        else:
+                            day_lessons.append(None)
+                    class_schedule_result[day_map[day]] = day_lessons
+                final_schedule[class_name] = class_schedule_result
+
+            self.schedule = final_schedule
+            return final_schedule
+        except Exception as e:
+            print(f"Ошибка при генерации расписания: {e}")
+            import traceback
+            traceback.print_exc()
+            return {}
+
+    def try_place_lesson(self, schedule, teacher_schedule, classroom_schedule,
+                         class_schedule, subject_schedule, class_group, day, slot,
+                         teacher, subject):
+        try:
+            # Проверка конфликта предмета
+            if subject in subject_schedule.get((day, slot), set()):
+                return False
+
+            # Проверка занятости учителя
+            if teacher in teacher_schedule and (day, slot) in teacher_schedule[teacher]:
+                return False
+
+            # Поиск свободного кабинета
+            classroom_found = self.find_classroom(day, slot, subject)
+            if not classroom_found:
+                return False
+
+            # Проверка занятости кабинета
+            if classroom_found in classroom_schedule and (day, slot) in classroom_schedule[classroom_found]:
+                return False
+
+            # Размещение урока
+            schedule[day][slot][class_group] = {
+                "subject": subject,
+                "teacher": teacher,
+                "classroom": classroom_found
+            }
+            class_schedule[class_group][day].add(slot)
+
+            if teacher not in teacher_schedule:
+                teacher_schedule[teacher] = {}
+            teacher_schedule[teacher][(day, slot)] = class_group
+
+            if classroom_found not in classroom_schedule:
+                classroom_schedule[classroom_found] = {}
+            classroom_schedule[classroom_found][(day, slot)] = class_group
+
+            if (day, slot) not in subject_schedule:
+                subject_schedule[(day, slot)] = set()
+            subject_schedule[(day, slot)].add(subject)
+
+            return True
+        except Exception as e:
+            print(f"Ошибка в try_place_lesson: {e}")
+            return False
+
+
+class ClassSubjectsDialog(QDialog):
+    """Диалоговое окно для добавления предметов в класс"""
+
+    def __init__(self, class_obj, subjects, parent=None):
+        super().__init__(parent)
+        self.class_obj = class_obj
+        self.subjects = subjects
+        self.class_val = int("".join([s for s in self.class_obj.name if s in "0123456789"]))
+        self.setWindowTitle(f"Предметы для класса {class_obj.name}")
+        self.setGeometry(200, 200, 600, 400)
+
+        layout = QVBoxLayout()
+
+        # Форма добавления предмета
+        form_layout = QGridLayout()
+
+        self.subject_combo = QComboBox()
+        self.subject_combo.addItems([s.name for s in subjects if self.class_val in range(s.class_range.get_int_range_key(s.class_range.GET())[0], s.class_range.get_int_range_key(s.class_range.GET())[1] + 1)])
+        form_layout.addWidget(QLabel("Предмет:"), 0, 0)
+        form_layout.addWidget(self.subject_combo, 0, 1)
+
+        self.hours_spin = QSpinBox()
+        self.hours_spin.setRange(1, 10)
+        self.hours_spin.setValue(3)
+        form_layout.addWidget(QLabel("Часов в неделю:"), 1, 0)
+        form_layout.addWidget(self.hours_spin, 1, 1)
+
+        self.add_btn = QPushButton("Добавить предмет")
+        self.add_btn.clicked.connect(self.add_subject)
+        form_layout.addWidget(self.add_btn, 2, 0, 1, 2)
+
+        layout.addLayout(form_layout)
+
+        # Таблица предметов класса
+        self.table = QTableWidget()
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["Предмет", "Часов в неделю", "Действия"])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        layout.addWidget(self.table)
+
+        # Кнопки диалога
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+
+        self.setLayout(layout)
+        self.update_table()
+
+    def update_table(self):
+        self.table.setRowCount(len(self.class_obj.subjects))
+
+        for row, (subject_name, hours) in enumerate(self.class_obj.subjects.items()):
+            self.table.setItem(row, 0, QTableWidgetItem(subject_name))
+            self.table.setItem(row, 1, QTableWidgetItem(str(hours)))
+
+            # Кнопка удаления
+            btn = QPushButton("Удалить")
+            btn.clicked.connect(lambda _, s=subject_name: self.delete_subject(s))
+            self.table.setCellWidget(row, 2, btn)
+
+    def add_subject(self):
+        subject_name = self.subject_combo.currentText()
+        hours = self.hours_spin.value()
+
+        # Проверяем, не добавлен ли уже этот предмет
+        if subject_name in self.class_obj.subjects:
+            QMessageBox.warning(self, "Ошибка", f"Этот предмет уже добавлен в {self.class_obj.name} класс")
+            return
+
+        # Добавляем предмет в класс
+        self.class_obj.subjects[subject_name] = hours
+        self.update_table()
+
+    def delete_subject(self, subject_name):
+        if subject_name in self.class_obj.subjects:
+            del self.class_obj.subjects[subject_name]
+            self.update_table()
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.scheduler = Scheduler()
+        self.init_ui()
+
+    def init_ui(self):
+        self.setWindowTitle("Школьное расписание")
+        self.setGeometry(100, 100, 1000, 700)
+
+        # Создание вкладок
+        self.tabs = QTabWidget()
+        self.setCentralWidget(self.tabs)
+
+        # Вкладка расписания
+        self.schedule_tab = QWidget()
+        self.tabs.addTab(self.schedule_tab, "Расписание")
+        self.init_schedule_tab()
+
+        # Вкладка классов
+        self.classes_tab = QWidget()
+        self.tabs.addTab(self.classes_tab, "Классы")
+        self.init_classes_tab()
+
+        # Вкладка предметов
+        self.subjects_tab = QWidget()
+        self.tabs.addTab(self.subjects_tab, "Предметы")
+        self.init_subjects_tab()
+
+        # Вкладка учителей
+        self.teachers_tab = QWidget()
+        self.tabs.addTab(self.teachers_tab, "Учителя")
+        self.init_teachers_tab()
+
+        # Вкладка кабинетов
+        self.classrooms_tab = QWidget()
+        self.tabs.addTab(self.classrooms_tab, "Кабинеты")
+        self.init_classrooms_tab()
+
+        # Вкладка помощи
+        self.help_tab = QWidget()
+        self.tabs.addTab(self.help_tab, "Помощь")
+        self.init_help_tab()
+
+        # Создание меню
+        menubar = self.menuBar()
+        file_menu = menubar.addMenu("Файл")
+
+        save_action = file_menu.addAction("Сохранить данные")
+        save_action.triggered.connect(self.save_data)
+
+        load_action = file_menu.addAction("Загрузить данные")
+        load_action.triggered.connect(self.load_data)
+
+        export_action = file_menu.addAction("Экспорт расписания")
+        export_action.triggered.connect(self.export_schedule)
+
+        # Статус бар
+        self.statusBar().showMessage("Готово")
+
+    def init_schedule_tab(self):
+        layout = QVBoxLayout()
+
+        # Кнопки управления
+        btn_layout = QHBoxLayout()
+        self.generate_btn = QPushButton("Сгенерировать расписание")
+        self.generate_btn.clicked.connect(self.generate_schedule)
+        btn_layout.addWidget(self.generate_btn)
+
+        self.clear_btn = QPushButton("Очистить расписание")
+        self.clear_btn.clicked.connect(self.clear_schedule)
+        btn_layout.addWidget(self.clear_btn)
+
+        layout.addLayout(btn_layout)
+
+        # Таблица расписания
+        self.schedule_table = QTableWidget()
+        self.schedule_table.setColumnCount(8)
+        self.schedule_table.setHorizontalHeaderLabels(
+            ["Класс", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
+        )
+        self.schedule_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        layout.addWidget(self.schedule_table)
+
+        self.schedule_tab.setLayout(layout)
+
+    def init_classes_tab(self):
+        layout = QVBoxLayout()
+
+        # Форма добавления класса
+        form_layout = QHBoxLayout()
+
+        self.class_name_input = QLineEdit()
+        self.class_name_input.setPlaceholderText("Название класса")
+        form_layout.addWidget(self.class_name_input)
+
+        self.add_class_btn = QPushButton("Добавить класс")
+        self.add_class_btn.clicked.connect(self.add_class)
+        form_layout.addWidget(self.add_class_btn)
+
+        layout.addLayout(form_layout)
+
+        # Таблица классов
+        self.classes_table = QTableWidget()
+        self.classes_table.setColumnCount(4)
+        self.classes_table.setHorizontalHeaderLabels(["Класс", "Количество предметов", "Действия", "X"])
+        self.classes_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        layout.addWidget(self.classes_table)
+
+        self.classes_tab.setLayout(layout)
+
+    def init_subjects_tab(self):
+        layout = QVBoxLayout()
+
+        # Форма добавления предмета
+        form_layout = QHBoxLayout()
+
+        self.subject_name_input = QComboBox()
+        self.subject_name_input.addItems(["", "Математика", "Алгебра", "Геометрия", "ВиС", "Информатика", "Окружающий мир", "География",
+                                       "Биология", "Химия", "Физика", "ОБЖ", "Астрономия", "Обществознание", "История", "ОДНКР",
+                                       "Право", "Экономика", "Разговоры о важном", "Русский язык", "Чтение", "Литература", "Иностранный язык",
+                                       "Технология", "ИЗО", "Труд", "Музыка", "Физ-ра", "МХК", "Индивидуальный проект"])
+        form_layout.addWidget(QLabel("Название предмета:"))
+        form_layout.addWidget(self.subject_name_input)
+
+        self.room_type_input = QComboBox()
+        self.room_type_input.addItems(["", "Компьютерный класс", "Общепредметный", "Биология", "Химия",
+                                            "Физика", "Астрономия", "Музей", "Актовый зал", "Мастерская",
+                                            "Художественный зал", "Музыка", "Спортзал"])
+        form_layout.addWidget(QLabel("Тип кабинета:"))
+        form_layout.addWidget(self.room_type_input)
+
+        self.class_range_input = QComboBox()
+        self.class_range_input.addItems(["", "1-11", "1-4", "10-11", "1-6", "7-11", "5-11", "8-11", "5-6", "2-11", "5-8", "1-8"])
+        form_layout.addWidget(QLabel("Границы классов:"))
+        form_layout.addWidget(self.class_range_input)
+
+        self.add_subject_btn = QPushButton("Добавить предмет")
+        self.add_subject_btn.clicked.connect(self.add_subject)
+        form_layout.addWidget(self.add_subject_btn)
+
+        layout.addLayout(form_layout)
+
+        # Таблица предметов
+        self.subjects_table = QTableWidget()
+        self.subjects_table.setColumnCount(4)
+        self.subjects_table.setHorizontalHeaderLabels(["Предмет", "Тип кабинета", "Границы классов", "X"])
+        self.subjects_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        layout.addWidget(self.subjects_table)
+
+        self.subjects_tab.setLayout(layout)
+
+    def init_teachers_tab(self):
+        layout = QVBoxLayout()
+
+        # Форма добавления учителя
+        form_layout = QHBoxLayout()
+
+        self.teacher_name_input = QLineEdit()
+        self.teacher_name_input.setPlaceholderText("ФИО учителя")
+        form_layout.addWidget(self.teacher_name_input)
+
+        self.teacher_subjects_input = QLineEdit()
+        self.teacher_subjects_input.setPlaceholderText("Предметы учителя, перечислять при помощи '; '")
+        form_layout.addWidget(self.teacher_subjects_input)
+
+        self.add_teacher_btn = QPushButton("Добавить учителя")
+        self.add_teacher_btn.clicked.connect(self.add_teacher)
+        form_layout.addWidget(self.add_teacher_btn)
+
+        layout.addLayout(form_layout)
+
+        # Таблица учителей
+        self.teachers_table = QTableWidget()
+        self.teachers_table.setColumnCount(3)
+        self.teachers_table.setHorizontalHeaderLabels(["Учитель", "Предметы", "X"])
+        self.teachers_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        layout.addWidget(self.teachers_table)
+
+        self.teachers_tab.setLayout(layout)
+
+    def init_classrooms_tab(self):
+        layout = QVBoxLayout()
+
+        # Форма добавления кабинета
+        form_layout = QHBoxLayout()
+
+        self.classroom_number_input = QLineEdit()
+        self.classroom_number_input.setPlaceholderText("Номер кабинета")
+        form_layout.addWidget(self.classroom_number_input)
+
+        self.classroom_type_input = QComboBox()
+        self.classroom_type_input.addItems(["", "Компьютерный класс", "Общепредметный", "Биология", "Химия",
+                                            "Физика", "Астрономия", "Музей", "Актовый зал", "Мастерская",
+                                            "Художественный зал", "Музыка", "Спортзал"])
+        form_layout.addWidget(QLabel("Тип кабинета:"))
+        form_layout.addWidget(self.classroom_type_input)
+
+        self.add_classroom_btn = QPushButton("Добавить кабинет")
+        self.add_classroom_btn.clicked.connect(self.add_classroom)
+        form_layout.addWidget(self.add_classroom_btn)
+
+        layout.addLayout(form_layout)
+
+        # Таблица кабинетов
+        self.classrooms_table = QTableWidget()
+        self.classrooms_table.setColumnCount(3)
+        self.classrooms_table.setHorizontalHeaderLabels(["Кабинет", "Тип", "Действия"])
+        self.classrooms_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        layout.addWidget(self.classrooms_table)
+
+        self.classrooms_tab.setLayout(layout)
+
+    def init_help_tab(self):
+        layout = QVBoxLayout()
+
+        help_text = """
+        <h2>Руководство пользователя</h2>
+
+        <h3>Добавление предметов в класс</h3>
+        <p>Для добавления предметов в учебный план класса:</p>
+        <ol>
+            <li>Перейдите на вкладку "Классы"</li>
+            <li>Нажмите кнопку "Управление предметами" напротив нужного класса</li>
+            <li>В открывшемся окне выберите предмет из списка</li>
+            <li>Укажите количество часов в неделю</li>
+            <li>Нажмите "Добавить предмет"</li>
+            <li>После добавления всех предметов нажмите "ОК"</li>
+        </ol>
+
+        <p>Для удаления предмета из класса нажмите кнопку "Удалить" напротив предмета.</p>
+
+        <h3>Генерация расписания</h3>
+        <p>После добавления всех необходимых данных перейдите на вкладку "Расписание" 
+        и нажмите кнопку "Сгенерировать расписание". Программа автоматически распределит 
+        уроки по дням недели с учетом указанных часов и ограничений.</p>
+
+        <h3>Ограничения</h3>
+        <ul>
+            <li>Один предмет не может преподаваться одновременно в разных классах</li>
+            <li>Учитель не может вести два урока одновременно</li>
+            <li>Кабинет не может использоваться двумя классами одновременно</li>
+            <li>Специализированные предметы проводятся в соответствующих кабинетах</li>
+        </ul>
+        """
+
+        help_label = QLabel(help_text)
+        help_label.setFont(QFont("Arial", 11))
+        help_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        help_label.setWordWrap(True)
+
+        layout.addWidget(help_label)
+        self.help_tab.setLayout(layout)
+
+    def update_tables(self):
+        # Обновление таблицы классов
+        self.classes_table.setRowCount(len(self.scheduler.classes))
+        for i, cls in enumerate(self.scheduler.classes):
+            self.classes_table.setItem(i, 0, QTableWidgetItem(cls.name))
+            self.classes_table.setItem(i, 1, QTableWidgetItem(str(len(cls.subjects))))
+
+            # Кнопка управления предметами
+            subjects_btn = QPushButton("Управление предметами")
+            subjects_btn.clicked.connect(lambda _, c=cls: self.manage_class_subjects(c))
+            self.classes_table.setCellWidget(i, 2, subjects_btn)
+
+            btn = QPushButton("Удалить")
+            btn.clicked.connect(lambda _, idx = i: self.delete_class(idx))
+            self.classes_table.setCellWidget(i, 3, btn)
+
+        # Обновление таблицы предметов
+        self.subjects_table.setRowCount(len(self.scheduler.subjects))
+        for i, subject in enumerate(self.scheduler.subjects):
+            self.subjects_table.setItem(i, 0, QTableWidgetItem(subject.name))
+            self.subjects_table.setItem(i, 1, QTableWidgetItem(subject.room_type))
+            self.subjects_table.setItem(i, 2, QTableWidgetItem(subject.class_range.get_key(subject.class_range.GET())))
+
+            btn = QPushButton("Удалить")
+            btn.clicked.connect(lambda _, idx=i: self.delete_subject(idx))
+            self.subjects_table.setCellWidget(i, 3, btn)
+
+        # Обновление таблицы учителей
+        self.teachers_table.setRowCount(len(self.scheduler.teachers))
+        for i, teacher in enumerate(self.scheduler.teachers):
+            self.teachers_table.setItem(i, 0, QTableWidgetItem(teacher.name))
+            self.teachers_table.setItem(i, 1, QTableWidgetItem(", ".join(teacher.subjects)))
+
+            btn = QPushButton("Удалить")
+            btn.clicked.connect(lambda _, idx=i: self.delete_teacher(idx))
+            self.teachers_table.setCellWidget(i, 2, btn)
+
+        # Обновление таблицы кабинетов
+        self.classrooms_table.setRowCount(len(self.scheduler.classrooms))
+        for i, room in enumerate(self.scheduler.classrooms):
+            self.classrooms_table.setItem(i, 0, QTableWidgetItem(room.number))
+            self.classrooms_table.setItem(i, 1, QTableWidgetItem(room.room_type))
+
+            btn = QPushButton("Удалить")
+            btn.clicked.connect(lambda _, idx=i: self.delete_classroom(idx))
+            self.classrooms_table.setCellWidget(i, 2, btn)
+
+    def add_class(self):
+        name = self.class_name_input.text().strip()
+        if name and (int("".join([s for s in name if s in "0123456789"])) > 0):
+            # Создаем класс с пустым списком предметов
+            self.scheduler.classes.append(SchoolClass(name, {}))
+            self.class_name_input.clear()
+            self.update_tables()
+            self.statusBar().showMessage(f"Добавлен класс: {name}")
+        else:
+            QMessageBox.warning(self, "Ошибка", "Введите корректное название класса")
+
+    def add_subject(self):
+        name = self.subject_name_input.currentText() if self.subject_name_input.currentText() != "" else None
+        room_type = self.room_type_input.currentText()
+        class_range = self.class_range_input.currentText()
+
+        if name:
+            self.scheduler.subjects.append(Subject(name, 0, room_type, Class_range(class_range)))
+            self.subject_name_input.setCurrentIndex(0)
+            self.room_type_input.setCurrentIndex(0)
+            self.class_range_input.setCurrentIndex(0)
+            self.update_tables()
+            self.statusBar().showMessage(f"Добавлен предмет: {name}")
+        else:
+            QMessageBox.warning(self, "Ошибка", "Выберете название предмета")
+
+    def add_teacher(self):
+        name = self.teacher_name_input.text().strip()
+        subjects = self.teacher_subjects_input.text().split("; ")
+        n_flag = False
+        s_flag = False
+
+        if name and '.' in name and name.count('.') == 2:
+            n_flag = True
+        else:
+            QMessageBox.warning(self, "Ошибка", "Введите ФИО учителя")
+
+        if subjects and len(subjects) > 0:
+            s_flag = True
+        else:
+            QMessageBox.warning(self, "Ошибка", "Введите предметы")
+
+        if n_flag and s_flag:
+            self.scheduler.teachers.append(Teacher(name, subjects))
+            self.teacher_subjects_input.clear()
+            self.teacher_name_input.clear()
+            self.update_tables()
+            self.statusBar().showMessage(f"Добавлен учитель: {name}")
+
+    def add_classroom(self):
+        number = self.classroom_number_input.text().strip()
+        room_type = self.classroom_type_input.currentText()
+
+        if number and int(number) > 0:
+            self.scheduler.classrooms.append(Classroom(number, room_type))
+            self.classroom_number_input.clear()
+            self.classroom_type_input.setCurrentIndex(0)
+            self.update_tables()
+            self.statusBar().showMessage(f"Добавлен кабинет: {number}")
+        else:
+            QMessageBox.warning(self, "Ошибка", "Введите номер кабинета")
+
+    def delete_subject(self, index):
+        _subject = self.scheduler.subjects.pop(index)
+        self.update_tables()
+        self.statusBar().showMessage(f"Удалён предмет: {_subject.name}")
+
+    def delete_class(self, index):
+        _class = self.scheduler.classes.pop(index)
+        self.update_tables()
+        self.statusBar().showMessage(f"Удалён класс: {_class.name}")
+
+    def delete_teacher(self, index):
+        teacher = self.scheduler.teachers.pop(index)
+        self.update_tables()
+        self.statusBar().showMessage(f"Удален учитель: {teacher.name}")
+
+    def delete_classroom(self, index):
+        room = self.scheduler.classrooms.pop(index)
+        self.update_tables()
+        self.statusBar().showMessage(f"Удален кабинет: {room.number}")
+
+    def manage_class_subjects(self, class_obj):
+        """Открывает диалоговое окно для управления предметами класса"""
+        dialog = ClassSubjectsDialog(class_obj, self.scheduler.subjects, self)
+        if dialog.exec_() == QDialog.Accepted:
+            self.update_tables()
+            self.statusBar().showMessage(f"Предметы класса {class_obj.name} обновлены")
+
+    def generate_schedule(self):
+        try:
+            if not self.scheduler.classes:
+                QMessageBox.warning(self, "Ошибка", "Добавьте хотя бы один класс")
+                return
+
+            # Проверяем, что у всех классов есть предметы
+            for cls in self.scheduler.classes:
+                if not cls.subjects:
+                    QMessageBox.warning(self, "Ошибка", f"Класс {cls.name} не имеет предметов!")
+                    return
+
+            schedule = self.scheduler.generate_schedule()
+            self.schedule_table.setRowCount(len(self.scheduler.classes))
+
+            days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
+
+            for row, class_name in enumerate(schedule.keys()):
+                class_schedule = schedule[class_name]
+                self.schedule_table.setItem(row, 0, QTableWidgetItem(class_name))
+
+                for col in range(1, 8):  # колонки 1-7: дни недели
+                    if col <= 5:
+                        # Получаем расписание для текущего дня
+                        day_lessons = class_schedule.get(col, [])
+                        lesson_lines = []
+
+                        # Формируем список уроков с указанием времени и кабинета
+                        for slot_index, lesson in enumerate(day_lessons):
+                            if lesson:
+                                # Добавляем информацию об уроке
+                                lesson_info = f"{slot_index + 1}. {lesson['subject']}"
+                                if lesson.get('classroom'):
+                                    lesson_info += f" ({lesson['classroom']})"
+                                lesson_lines.append(lesson_info)
+
+                        lessons_str = "\n".join(lesson_lines) if lesson_lines else "Нет уроков"
+                    else:
+                        lessons_str = "Выходной"
+
+                    self.schedule_table.setItem(row, col, QTableWidgetItem(lessons_str))
+
+            self.statusBar().showMessage("Расписание успешно сгенерировано")
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка генерации", f"Произошла ошибка при генерации расписания:\n{str(e)}")
+            import traceback
+            traceback.print_exc()
+
+    def clear_schedule(self):
+        self.schedule_table.setRowCount(0)
+        self.statusBar().showMessage("Расписание очищено")
+
+    def save_data(self):
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Сохранить данные", "", "JSON Files (*.json)"
+        )
+
+        if file_path:
+            data = {
+                "classes": [{"name": cls.name, "subjects": cls.subjects} for cls in self.scheduler.classes],
+                "subjects": [{"name": sub.name, "hours": sub.hours, "room_type": sub.room_type, "class_range": sub.class_range.get_key(sub.class_range.GET())}
+                             for sub in self.scheduler.subjects],
+                "teachers": [{"name": tch.name, "subjects": tch.subjects} for tch in self.scheduler.teachers],
+                "classrooms": [{"number": room.number, "room_type": room.room_type}
+                               for room in self.scheduler.classrooms]
+            }
+
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+
+            self.statusBar().showMessage(f"Данные сохранены в {file_path}")
+
+    def load_data(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Загрузить данные", "", "JSON Files (*.json)"
+        )
+
+        if file_path:
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+
+                self.scheduler.classes = [
+                    SchoolClass(item["name"], item.get("subjects", {})) for item in data["classes"]
+                ]
+
+                self.scheduler.subjects = [
+                    Subject(item["name"], item["hours"], item["room_type"], Class_range(item["class_range"])) for item in data["subjects"]
+                ]
+
+                self.scheduler.teachers = [
+                    Teacher(item["name"], item.get("subjects", [])) for item in data["teachers"]
+                ]
+
+                self.scheduler.classrooms = [
+                    Classroom(item["number"], item["room_type"]) for item in data["classrooms"]
+                ]
+
+                self.update_tables()
+                self.statusBar().showMessage(f"Данные загружены из {file_path}")
+
+            except Exception as e:
+                QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить данные: {str(e)}")
+
+    def export_schedule(self):
+        if not self.scheduler.schedule:
+            QMessageBox.warning(self, "Ошибка", "Сначала сгенерируйте расписание")
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Экспорт расписания", "", "Text Files (*.txt)"
+        )
+
+        if file_path:
+            try:
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write("ШКОЛЬНОЕ РАСПИСАНИЕ\n\n")
+
+                    for class_name, class_schedule in self.scheduler.schedule.items():
+                        f.write(f"===== Класс: {class_name} =====\n")
+
+                        for day in range(1, 6):
+                            f.write(f"\nДень {day}:\n")
+                            lessons = class_schedule.get(day, [])
+
+                            for slot_index, lesson in enumerate(lessons):
+                                if lesson:
+                                    f.write(
+                                        f"{slot_index + 1}. {lesson['subject']} (Учитель: {lesson['teacher']}, Кабинет: {lesson['classroom']})\n")
+                                else:
+                                    f.write(f"{slot_index + 1}. ---\n")
+
+                        f.write("\n" + "=" * 30 + "\n\n")
+
+                self.statusBar().showMessage(f"Расписание экспортировано в {file_path}")
+
+            except Exception as e:
+                QMessageBox.critical(self, "Ошибка", f"Не удалось экспортировать расписание: {str(e)}")
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
