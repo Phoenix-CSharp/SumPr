@@ -973,8 +973,6 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    test = Class_range("1-11")
-    print(test(2, arg = test()))
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
