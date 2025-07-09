@@ -1,15 +1,5 @@
 {
-  "classes": [
-    {
-      "name": "11А",
-      "subjects": {
-        "Алгебра": 4,
-        "Геометрия": 2,
-        "ВиС": 1,
-        "Информатика": 4
-      }
-    }
-  ],
+  "classes": [],
   "subjects": [
     {
       "name": "Математика",
@@ -40,46 +30,152 @@
       "hours": 0,
       "room_type": "Компьютерный класс",
       "class_range": "7-11"
+    },
+    {
+      "name": "Индивидуальный проект",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "10-11"
+    },
+    {
+      "name": "География",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "5-11"
+    },
+    {
+      "name": "Окружающий мир",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "1-4"
+    },
+    {
+      "name": "Биология",
+      "hours": 0,
+      "room_type": "Биология",
+      "class_range": "5-11"
+    },
+    {
+      "name": "Химия",
+      "hours": 0,
+      "room_type": "Химия",
+      "class_range": "8-11"
+    },
+    {
+      "name": "Физика",
+      "hours": 0,
+      "room_type": "Физика",
+      "class_range": "7-11"
+    },
+    {
+      "name": "ОБЖ",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "5-11"
+    },
+    {
+      "name": "Астрономия",
+      "hours": 0,
+      "room_type": "Астрономия",
+      "class_range": "10-11"
+    },
+    {
+      "name": "Обществознание",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "5-11"
+    },
+    {
+      "name": "История",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "5-11"
+    },
+    {
+      "name": "ОДНКР",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "5-6"
+    },
+    {
+      "name": "Право",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "10-11"
+    },
+    {
+      "name": "Разговоры о важном",
+      "hours": 0,
+      "room_type": "Актовый зал",
+      "class_range": "1-11"
+    },
+    {
+      "name": "Экономика",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "10-11"
+    },
+    {
+      "name": "Русский язык",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "1-11"
+    },
+    {
+      "name": "Чтение",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "1-4"
+    },
+    {
+      "name": "Литература",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "5-11"
+    },
+    {
+      "name": "Иностранный язык",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "2-11"
+    },
+    {
+      "name": "Технология",
+      "hours": 0,
+      "room_type": "Мастерская",
+      "class_range": "5-8"
+    },
+    {
+      "name": "ИЗО",
+      "hours": 0,
+      "room_type": "Художественный зал",
+      "class_range": "1-8"
+    },
+    {
+      "name": "Труд",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "1-4"
+    },
+    {
+      "name": "Музыка",
+      "hours": 0,
+      "room_type": "Музыка",
+      "class_range": "1-8"
+    },
+    {
+      "name": "Физ-ра",
+      "hours": 0,
+      "room_type": "Спортзал",
+      "class_range": "1-11"
+    },
+    {
+      "name": "МХК",
+      "hours": 0,
+      "room_type": "Общепредметный",
+      "class_range": "10-11"
     }
   ],
-  "teachers": [
-    {
-      "name": "Исупова Л.А.",
-      "subjects": [
-        "Математика",
-        "ВиС",
-        "Геометрия",
-        "Алгебра"
-      ]
-    },
-    {
-      "name": "Петрова З.А.",
-      "subjects": [
-        "Математика",
-        "ВиС",
-        "Геометрия",
-        "Алгебра"
-      ]
-    },
-    {
-      "name": "Буртаева О.Н.",
-      "subjects": [
-        "Информатика"
-      ]
-    }
-  ],
-  "classrooms": [
-    {
-      "number": "101",
-      "room_type": "Общепредметный"
-    },
-    {
-      "number": "102",
-      "room_type": "Общепредметный"
-    },
-    {
-      "number": "110",
-      "room_type": "Компьютерный класс"
-    }
-  ]
+  "teachers": [],
+  "classrooms": []
 }
