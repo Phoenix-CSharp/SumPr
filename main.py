@@ -61,7 +61,7 @@ class Teacher_type:
                         "Учитель географии": ["География", "Разговоры о важном"],
                         "Учитель биологии": ["Биология", "Разговоры о важном", "Индивидуальный проект"], 
                         "Учитель химии": ["Химия", "Разговоры о важном", "Индивидуальный проект"],
-                        "Учитель Физики": ["Физика", "Астрономия", "Разговоры о важном", "Индивидуальный проект"],
+                        "Учитель физики": ["Физика", "Астрономия", "Разговоры о важном", "Индивидуальный проект"],
                         "Учитель ОБЖ": ["ОБЖ", "Разговоры о важном"],
                         "Учитель истории и обществознания": ["История", "Обществознание", "Право", "Разговоры о важном", "Индивидуальный проект"],
                         "Учитель иностранного языка": ["Иностранный язык", "Разговоры о важном", "Индивидуальный проект"],
@@ -142,7 +142,7 @@ class Scheduler:
                 available_teachers.append(teacher)
         return random.choice(available_teachers) if available_teachers else None
 
-    def get_room_type_for_subject(self, subject_name):
+    def get_room_type_for_subject(self, subject_name: str) -> str:
         """Возвращает тип кабинета для предмета"""
         for subject in self.subjects:
             if subject.name == subject_name:
@@ -973,8 +973,6 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    test = Class_range("1-11")
-    print(test(2, arg = test()))
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
