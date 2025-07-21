@@ -1,0 +1,732 @@
+{
+  "schedule": [
+    {
+      "day": 0,
+      "period": 0,
+      "room": 0,
+      "class": 2,
+      "subject": 2,
+      "teacher": 3
+    },
+    {
+      "day": 0,
+      "period": 0,
+      "room": 1,
+      "class": 3,
+      "subject": 3,
+      "teacher": 4
+    },
+    {
+      "day": 0,
+      "period": 1,
+      "room": 0,
+      "class": 2,
+      "subject": 3,
+      "teacher": 0
+    },
+    {
+      "day": 0,
+      "period": 1,
+      "room": 3,
+      "class": 4,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 0,
+      "period": 1,
+      "room": 4,
+      "class": 3,
+      "subject": 1,
+      "teacher": 3
+    },
+    {
+      "day": 0,
+      "period": 2,
+      "room": 1,
+      "class": 3,
+      "subject": 2,
+      "teacher": 0
+    },
+    {
+      "day": 0,
+      "period": 2,
+      "room": 2,
+      "class": 4,
+      "subject": 4,
+      "teacher": 4
+    },
+    {
+      "day": 0,
+      "period": 2,
+      "room": 4,
+      "class": 2,
+      "subject": 2,
+      "teacher": 1
+    },
+    {
+      "day": 0,
+      "period": 3,
+      "room": 0,
+      "class": 4,
+      "subject": 3,
+      "teacher": 0
+    },
+    {
+      "day": 0,
+      "period": 3,
+      "room": 1,
+      "class": 3,
+      "subject": 1,
+      "teacher": 3
+    },
+    {
+      "day": 0,
+      "period": 3,
+      "room": 3,
+      "class": 0,
+      "subject": 1,
+      "teacher": 2
+    },
+    {
+      "day": 0,
+      "period": 3,
+      "room": 4,
+      "class": 2,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 0,
+      "period": 4,
+      "room": 0,
+      "class": 1,
+      "subject": 2,
+      "teacher": 0
+    },
+    {
+      "day": 0,
+      "period": 4,
+      "room": 1,
+      "class": 0,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 0,
+      "period": 4,
+      "room": 2,
+      "class": 4,
+      "subject": 4,
+      "teacher": 1
+    },
+    {
+      "day": 0,
+      "period": 5,
+      "room": 1,
+      "class": 1,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 0,
+      "period": 5,
+      "room": 3,
+      "class": 2,
+      "subject": 1,
+      "teacher": 2
+    },
+    {
+      "day": 0,
+      "period": 5,
+      "room": 4,
+      "class": 0,
+      "subject": 2,
+      "teacher": 1
+    },
+    {
+      "day": 1,
+      "period": 0,
+      "room": 0,
+      "class": 3,
+      "subject": 4,
+      "teacher": 1
+    },
+    {
+      "day": 1,
+      "period": 0,
+      "room": 1,
+      "class": 4,
+      "subject": 1,
+      "teacher": 3
+    },
+    {
+      "day": 1,
+      "period": 0,
+      "room": 4,
+      "class": 0,
+      "subject": 3,
+      "teacher": 4
+    },
+    {
+      "day": 1,
+      "period": 1,
+      "room": 0,
+      "class": 4,
+      "subject": 2,
+      "teacher": 2
+    },
+    {
+      "day": 1,
+      "period": 1,
+      "room": 3,
+      "class": 0,
+      "subject": 2,
+      "teacher": 1
+    },
+    {
+      "day": 1,
+      "period": 1,
+      "room": 4,
+      "class": 1,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 1,
+      "period": 2,
+      "room": 0,
+      "class": 4,
+      "subject": 3,
+      "teacher": 0
+    },
+    {
+      "day": 1,
+      "period": 2,
+      "room": 1,
+      "class": 0,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 1,
+      "period": 2,
+      "room": 3,
+      "class": 3,
+      "subject": 4,
+      "teacher": 1
+    },
+    {
+      "day": 1,
+      "period": 2,
+      "room": 4,
+      "class": 1,
+      "subject": 1,
+      "teacher": 2
+    },
+    {
+      "day": 1,
+      "period": 3,
+      "room": 0,
+      "class": 1,
+      "subject": 3,
+      "teacher": 0
+    },
+    {
+      "day": 1,
+      "period": 3,
+      "room": 1,
+      "class": 0,
+      "subject": 1,
+      "teacher": 2
+    },
+    {
+      "day": 1,
+      "period": 3,
+      "room": 2,
+      "class": 4,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 1,
+      "period": 3,
+      "room": 3,
+      "class": 3,
+      "subject": 2,
+      "teacher": 3
+    },
+    {
+      "day": 1,
+      "period": 4,
+      "room": 1,
+      "class": 1,
+      "subject": 2,
+      "teacher": 0
+    },
+    {
+      "day": 1,
+      "period": 4,
+      "room": 2,
+      "class": 3,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 1,
+      "period": 4,
+      "room": 3,
+      "class": 4,
+      "subject": 1,
+      "teacher": 3
+    },
+    {
+      "day": 1,
+      "period": 4,
+      "room": 4,
+      "class": 2,
+      "subject": 1,
+      "teacher": 2
+    },
+    {
+      "day": 1,
+      "period": 5,
+      "room": 0,
+      "class": 3,
+      "subject": 1,
+      "teacher": 3
+    },
+    {
+      "day": 1,
+      "period": 5,
+      "room": 2,
+      "class": 4,
+      "subject": 4,
+      "teacher": 4
+    },
+    {
+      "day": 1,
+      "period": 5,
+      "room": 4,
+      "class": 1,
+      "subject": 4,
+      "teacher": 1
+    },
+    {
+      "day": 2,
+      "period": 0,
+      "room": 0,
+      "class": 4,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 2,
+      "period": 0,
+      "room": 1,
+      "class": 2,
+      "subject": 4,
+      "teacher": 1
+    },
+    {
+      "day": 2,
+      "period": 1,
+      "room": 0,
+      "class": 0,
+      "subject": 2,
+      "teacher": 1
+    },
+    {
+      "day": 2,
+      "period": 1,
+      "room": 1,
+      "class": 4,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 2,
+      "period": 1,
+      "room": 2,
+      "class": 2,
+      "subject": 1,
+      "teacher": 2
+    },
+    {
+      "day": 2,
+      "period": 1,
+      "room": 3,
+      "class": 1,
+      "subject": 1,
+      "teacher": 3
+    },
+    {
+      "day": 2,
+      "period": 2,
+      "room": 0,
+      "class": 4,
+      "subject": 1,
+      "teacher": 3
+    },
+    {
+      "day": 2,
+      "period": 2,
+      "room": 1,
+      "class": 0,
+      "subject": 3,
+      "teacher": 0
+    },
+    {
+      "day": 2,
+      "period": 2,
+      "room": 2,
+      "class": 3,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 2,
+      "period": 2,
+      "room": 4,
+      "class": 1,
+      "subject": 4,
+      "teacher": 1
+    },
+    {
+      "day": 2,
+      "period": 3,
+      "room": 0,
+      "class": 4,
+      "subject": 2,
+      "teacher": 2
+    },
+    {
+      "day": 2,
+      "period": 3,
+      "room": 1,
+      "class": 3,
+      "subject": 3,
+      "teacher": 4
+    },
+    {
+      "day": 2,
+      "period": 3,
+      "room": 4,
+      "class": 0,
+      "subject": 4,
+      "teacher": 1
+    },
+    {
+      "day": 2,
+      "period": 4,
+      "room": 0,
+      "class": 3,
+      "subject": 2,
+      "teacher": 1
+    },
+    {
+      "day": 2,
+      "period": 4,
+      "room": 1,
+      "class": 4,
+      "subject": 3,
+      "teacher": 0
+    },
+    {
+      "day": 2,
+      "period": 4,
+      "room": 2,
+      "class": 1,
+      "subject": 2,
+      "teacher": 3
+    },
+    {
+      "day": 2,
+      "period": 5,
+      "room": 0,
+      "class": 3,
+      "subject": 2,
+      "teacher": 2
+    },
+    {
+      "day": 2,
+      "period": 5,
+      "room": 2,
+      "class": 1,
+      "subject": 3,
+      "teacher": 0
+    },
+    {
+      "day": 3,
+      "period": 0,
+      "room": 1,
+      "class": 0,
+      "subject": 3,
+      "teacher": 4
+    },
+    {
+      "day": 3,
+      "period": 0,
+      "room": 2,
+      "class": 2,
+      "subject": 4,
+      "teacher": 1
+    },
+    {
+      "day": 3,
+      "period": 0,
+      "room": 3,
+      "class": 4,
+      "subject": 2,
+      "teacher": 2
+    },
+    {
+      "day": 3,
+      "period": 1,
+      "room": 0,
+      "class": 4,
+      "subject": 1,
+      "teacher": 2
+    },
+    {
+      "day": 3,
+      "period": 1,
+      "room": 1,
+      "class": 1,
+      "subject": 1,
+      "teacher": 3
+    },
+    {
+      "day": 3,
+      "period": 1,
+      "room": 3,
+      "class": 0,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 3,
+      "period": 2,
+      "room": 1,
+      "class": 2,
+      "subject": 2,
+      "teacher": 3
+    },
+    {
+      "day": 3,
+      "period": 2,
+      "room": 3,
+      "class": 1,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 3,
+      "period": 2,
+      "room": 4,
+      "class": 4,
+      "subject": 4,
+      "teacher": 1
+    },
+    {
+      "day": 3,
+      "period": 3,
+      "room": 0,
+      "class": 0,
+      "subject": 3,
+      "teacher": 4
+    },
+    {
+      "day": 3,
+      "period": 3,
+      "room": 1,
+      "class": 3,
+      "subject": 2,
+      "teacher": 2
+    },
+    {
+      "day": 3,
+      "period": 3,
+      "room": 4,
+      "class": 1,
+      "subject": 3,
+      "teacher": 0
+    },
+    {
+      "day": 3,
+      "period": 4,
+      "room": 0,
+      "class": 0,
+      "subject": 2,
+      "teacher": 1
+    },
+    {
+      "day": 3,
+      "period": 4,
+      "room": 1,
+      "class": 2,
+      "subject": 3,
+      "teacher": 4
+    },
+    {
+      "day": 3,
+      "period": 5,
+      "room": 0,
+      "class": 0,
+      "subject": 1,
+      "teacher": 2
+    },
+    {
+      "day": 3,
+      "period": 5,
+      "room": 2,
+      "class": 3,
+      "subject": 3,
+      "teacher": 4
+    },
+    {
+      "day": 4,
+      "period": 0,
+      "room": 1,
+      "class": 4,
+      "subject": 4,
+      "teacher": 4
+    },
+    {
+      "day": 4,
+      "period": 0,
+      "room": 2,
+      "class": 2,
+      "subject": 1,
+      "teacher": 2
+    },
+    {
+      "day": 4,
+      "period": 0,
+      "room": 3,
+      "class": 1,
+      "subject": 4,
+      "teacher": 1
+    },
+    {
+      "day": 4,
+      "period": 1,
+      "room": 1,
+      "class": 1,
+      "subject": 1,
+      "teacher": 2
+    },
+    {
+      "day": 4,
+      "period": 1,
+      "room": 2,
+      "class": 4,
+      "subject": 3,
+      "teacher": 0
+    },
+    {
+      "day": 4,
+      "period": 1,
+      "room": 3,
+      "class": 2,
+      "subject": 4,
+      "teacher": 1
+    },
+    {
+      "day": 4,
+      "period": 1,
+      "room": 4,
+      "class": 0,
+      "subject": 4,
+      "teacher": 4
+    },
+    {
+      "day": 4,
+      "period": 2,
+      "room": 2,
+      "class": 4,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 4,
+      "period": 2,
+      "room": 3,
+      "class": 0,
+      "subject": 1,
+      "teacher": 2
+    },
+    {
+      "day": 4,
+      "period": 3,
+      "room": 2,
+      "class": 2,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 4,
+      "period": 3,
+      "room": 3,
+      "class": 4,
+      "subject": 3,
+      "teacher": 0
+    },
+    {
+      "day": 4,
+      "period": 4,
+      "room": 0,
+      "class": 3,
+      "subject": 4,
+      "teacher": 4
+    },
+    {
+      "day": 4,
+      "period": 4,
+      "room": 1,
+      "class": 2,
+      "subject": 1,
+      "teacher": 3
+    },
+    {
+      "day": 4,
+      "period": 4,
+      "room": 4,
+      "class": 0,
+      "subject": 2,
+      "teacher": 0
+    },
+    {
+      "day": 4,
+      "period": 5,
+      "room": 0,
+      "class": 3,
+      "subject": 0,
+      "teacher": 4
+    },
+    {
+      "day": 4,
+      "period": 5,
+      "room": 1,
+      "class": 0,
+      "subject": 4,
+      "teacher": 1
+    },
+    {
+      "day": 4,
+      "period": 5,
+      "room": 3,
+      "class": 4,
+      "subject": 1,
+      "teacher": 3
+    },
+    {
+      "day": 4,
+      "period": 5,
+      "room": 4,
+      "class": 2,
+      "subject": 3,
+      "teacher": 0
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+#импорты для графического интерфейса
 import sys
 import json
 import random
@@ -8,6 +9,14 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QTabWidget, QWidget, QVB
                              QDialog, QDialogButtonBox, QGridLayout)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
+
+# импорты для генетического алгоритма
+from deap import base, creator, tools, algorithms
+import random
+import numpy as np
+import json
+import pandas as pd
+from tabulate import tabulate
 
 
 class Class_range:
@@ -79,6 +88,8 @@ class Teacher_type:
             return self.type
         else: 
             return self.subjetcs
+    def __eq__(self, name: str = ""):
+        return self.name == name if isinstance(name, str) else False
         
 
 class Subject:
@@ -97,12 +108,16 @@ class Teacher:
         self.name = name
         self.type = type
         self.subjects = self.type()
+    def __eq__(self, type: str = ""):
+        return self.type == type if isinstance(type, str) else False
 
 
 class Classroom:
     def __init__(self, number: str = "", room_type: str =""):
         self.number = number
         self.room_type = room_type
+    def __eq__(self, room_type: str = ""):
+        return self.room_type == room_type if isinstance(room_type, str) else False
 
 
 class SchoolClass:
@@ -124,39 +139,25 @@ class Scheduler:
         self.subjects = []
         self.classes = []
         self.schedule = {}
-        self.class_teacher_assignments = defaultdict(dict)  # {class_name: {subject: teacher_name}}
+        self.init_enter_value()
 
-    def assign_teachers_to_classes(self):
-        """Назначаем учителей на предметы в классах."""
-        for cls in self.classes:
-            for subject in cls.subjects:
-                teacher = self.find_teacher_for_subject(subject)
-                if teacher:
-                    self.class_teacher_assignments[cls.name][subject] = teacher.name
+    def init_enter_value(self):
+        """Инициализируем входные значения для алгоритма"""
+        self.num_classes = len(self.classes)
+        self.num_subjects = len(self.subjects)
+        self.num_teachers = len(self.teachers)
+        self.num_classrooms = len(self.classrooms)
+        self.num_days = len(self.DAYS)
+        self.num_periods = self.MAX_CLASS_LESSONS_PER_DAY
+        self.num_time_slots = self.num_days * self.num_periods  # 30 временных слотов
+        self.teacher_subjects = {t.name: t.subjects for t in self.teachers} if self.teachers else {}
+        self.required_lessons = {c.name: c.subjects for c in self.classes} if self.classes else {}
+        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+        creator.create("Individual", list, fitness=creator.FitnessMin)
+        self.ind_size = self.num_time_slots * self.num_classrooms
+    def create_individual(self):
+        self.individual = [(-1, -1, -1)] * self.ind_size    
 
-    def find_teacher_for_subject(self, subject_name: str) -> str | None:
-        """Ищем учителя, который может вести данный предмет."""
-        available_teachers = [teacher for teacher in self.teachers if subject_name in teacher.subjects]
-        for teacher in self.teachers:
-            if subject_name in teacher.subjects:
-                available_teachers.append(teacher)
-        return random.choice(available_teachers) if available_teachers else None
-
-    def get_room_type_for_subject(self, subject_name: str) -> str:
-        """Возвращает тип кабинета для предмета"""
-        for subject in self.subjects:
-            if subject.name == subject_name:
-                return subject.room_type
-        return ""
-
-    def find_classroom(self, day, slot, subject_name):
-        """Находим подходящий кабинет для предмета"""
-        required_type = self.get_room_type_for_subject(subject_name)
-        general = [cls for cls in self.classrooms if cls.room_type == required_type]
-
-        # Возвращаем первый доступный кабинет
-
-        return None
 
     def generate_schedule(self):
         try:
