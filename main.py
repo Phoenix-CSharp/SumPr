@@ -156,8 +156,29 @@ class Scheduler:
         creator.create("Individual", list, fitness=creator.FitnessMin)
         self.ind_size = self.num_time_slots * self.num_classrooms
     def create_individual(self):
-        self.individual = [(-1, -1, -1)] * self.ind_size    
-
+        individual = [(-1, -1, -1)] * self.ind_size
+        lessons_to_schedule = []
+        for c in self.classes:
+            for s in self.subjects:
+                for _ in range(self.required_lessons[c.name][s.name]):
+                    lessons_to_schedule.append((c, s))
+        random.shuffle(lessons_to_schedule)
+        # Распределяем уроки по слотам
+        used_slots = set()
+        for c, s in lessons_to_schedule:
+            possible_teachers = [t for t in self.teachers if s in self.teacher_subjects[t.name]]
+            if not possible_teachers:
+                continue
+            t = random.choice(self.possible_teachers)
+            for _ in range(500):
+                slot = random.choice(0, self.ind_size - 1)
+                if slot not in used_slots:
+                    individual[slot] = (c, s, t)
+                    used_slots.add(slot)
+                    break
+        return individual
+    def toolbox_init(self):
+        self.     
 
     def generate_schedule(self):
         try:
