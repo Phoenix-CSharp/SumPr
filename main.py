@@ -34,28 +34,46 @@ class Class_range:
                         "1-8": 10,
                         }
     def __init__(self, class_range: str = "1-11"):
+        self.class_range = class_range
         self.type = self.CLASS_RANGE[class_range]
 
     def __call__(self, *key, **options) -> int | str | list[int] | None:
+        """
+            Обработчик события прямого обращения к экземпляру класса с заданными аргументами\n
+            key == None | -1 => CLASS_RANGE[self.class_range]\n
+            key == -2 => self.class_range\n
+            key == -3 => list( map( int, self.class_range.split( "-" ) ) )\n
+            key == 1 and arg != None => CLASS_RANGE[arg] if arg in CLASS_RANGE\n
+            key == 2 and arg != None => _key == [(k, t) for (k, t) in CLASS_RANGE.items()\\
+            if arg in CLASS_RANGE.values() and t == arg][0]\n
+            key == 3 and arg != None => list( map( int, [(k, t) for (k, t) in CLASS_RANGE.items()\\
+            if arg in CLASS_RANGE.values() and t == arg][0]split( "-" ) ) )
+        """
         _key = -1 if len(key) == 0 else key[0]
         _arg = options.get("arg", 0)
 
         if _key == -1:
             return self.type
+
         elif _key == -2:
-            for _key, _type in self.CLASS_RANGE.items():
-                if _type == self.type: 
-                    return _key
+            return self.class_range
+        
+        elif _key == -3:
+            return list(map(int, self.class_range.split("-")))
+        
         elif _key == 1 and _arg and _arg in self.CLASS_RANGE: 
             return self.CLASS_RANGE[_arg]
+        
         elif _key == 2 and _arg in self.CLASS_RANGE.values():
-            for _key, _type in self.CLASS_RANGE.items():
-                if _type == _arg:
-                    return _key
+            for _k, _t in self.CLASS_RANGE.items():
+                if _t == _arg:
+                    return _k
+                
         elif _key == 3 and _arg in self.CLASS_RANGE.values():
-            for _key, _type in self.CLASS_RANGE.items():
-                if _type == _arg:
-                    return list(map(int, _key.split("-")))
+            for _k, _t in self.CLASS_RANGE.items():
+                if _t == _arg:
+                    return list(map(int, _k.split("-")))
+                
         else: return None
         
 
@@ -155,6 +173,7 @@ class Scheduler:
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMin)
         self.ind_size = self.num_time_slots * self.num_classrooms
+
     def create_individual(self):
         individual = [(-1, -1, -1)] * self.ind_size
         lessons_to_schedule = []
@@ -177,202 +196,25 @@ class Scheduler:
                     used_slots.add(slot)
                     break
         return individual
+    
     def toolbox_init(self):
-        self.     
+        self.toolbox = base.Toolbox()
+        self.toolbox.register("individual", tools.initIterate, creator.Individual, self.create_individual)
+        self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
 
-    def generate_schedule(self):
-        try:
-            # Назначим учителей на предметы в классах
-            self.assign_teachers_to_classes()
+    def evalute(self, individual: tuple[int, int, int]):
+        penalty = 0
+        schedule = [individual[i * self.num_classrooms:(i + 1) * self.num_classrooms] for i in range(self.num_time_slots)]
 
-            # Инициализация структур данных
-            schedule = {day: {slot: {} for slot in range(1, self.MAX_SLOTS + 1)} for day in self.DAYS}
-            teacher_schedule = defaultdict(lambda: defaultdict(set))
-            classroom_schedule = defaultdict(lambda: defaultdict(set))
-            class_schedule = defaultdict(lambda: defaultdict(set))
-            subject_schedule = defaultdict(lambda: defaultdict(set))
+        for t in range(self.num_time_slots):
+            assigments = [a for a in schedule[t] if a != (-1, -1, -1)]
+            assigned_classes = [a[0] for a in assigments]
+            assigned_teachers = [a[2] for a in assigments]
 
-            # Подготовка уроков для каждого класса
-            class_lessons = defaultdict(list)
-            for cls in self.classes:
-                for subject, hours in cls.subjects.items():
-                    for _ in range(hours):
-                        teacher_name = self.class_teacher_assignments[cls.name].get(subject, "Не назначен")
-                        class_lessons[cls.name].append({
-                            "subject": subject,
-                            "teacher": teacher_name
-                        })
-
-            # Распределение уроков
-            class_groups = list(class_lessons.keys())
-            random.shuffle(class_groups)
-
-            for class_group in class_groups:
-                random.shuffle(class_lessons[class_group])
-
-                for lesson in class_lessons[class_group]:
-                    teacher = lesson["teacher"]
-                    subject = lesson["subject"]
-                    placed = False
-
-                    # Попытка 1: Поставить рядом с существующими уроками
-                    for day in self.DAYS:
-                        if len(class_schedule[class_group][day]) >= self.MAX_CLASS_LESSONS_PER_DAY:
-                            continue
-
-                        busy_slots = class_schedule[class_group][day]
-                        candidate_slots = set()
-                        for slot in busy_slots:
-                            if slot > 1: candidate_slots.add(slot - 1)
-                            if slot < self.MAX_SLOTS: candidate_slots.add(slot + 1)
-                        candidate_slots -= busy_slots
-
-                        for slot in sorted(candidate_slots):
-                            if self.try_place_lesson(
-                                    schedule, teacher_schedule, classroom_schedule,
-                                    class_schedule, subject_schedule,
-                                    class_group, day, slot, teacher, subject
-                            ):
-                                placed = True
-                                break
-                        if placed: break
-
-                    # Попытка 2: Поставить в любой свободный слот
-                    if not placed:
-                        for day in self.DAYS:
-                            if len(class_schedule[class_group][day]) >= self.MAX_CLASS_LESSONS_PER_DAY:
-                                continue
-
-                            for slot in range(1, self.MAX_SLOTS + 1):
-                                if slot in class_schedule[class_group][day]:
-                                    continue
-
-                                if self.try_place_lesson(
-                                        schedule, teacher_schedule, classroom_schedule,
-                                        class_schedule, subject_schedule,
-                                        class_group, day, slot, teacher, subject
-                                ):
-                                    placed = True
-                                    break
-                            if placed: break
-
-                    # Попытка 3: Форсированное размещение
-                    if not placed:
-                        for day in self.DAYS:
-                            for slot in range(1, self.MAX_SLOTS + 1):
-                                if slot in class_schedule[class_group][day]:
-                                    continue
-
-                                # Проверка конфликта предмета
-                                if subject in subject_schedule[(day, slot)]:
-                                    continue
-
-                                # Проверка занятости учителя
-                                if (day, slot) in teacher_schedule[teacher]:
-                                    continue
-
-                                # Поиск свободного кабинета
-                                classroom_found = self.find_classroom(day, slot, subject)
-                                if not classroom_found:
-                                    continue
-
-                                # Проверка занятости кабинета
-                                if (day, slot) in classroom_schedule[classroom_found]:
-                                    continue
-
-                                # Размещаем урок
-                                schedule[day][slot][class_group] = {
-                                    "subject": subject,
-                                    "teacher": teacher,
-                                    "classroom": classroom_found
-                                }
-                                class_schedule[class_group][day].add(slot)
-                                teacher_schedule[teacher][(day, slot)] = class_group
-                                classroom_schedule[classroom_found][(day, slot)] = class_group
-                                subject_schedule[(day, slot)].add(subject)
-                                placed = True
-                                break
-                            if placed: break
-
-                    if not placed:
-                        print(f"Warning! Не удалось разместить урок: {class_group} {subject} {teacher}")
-
-            # Преобразование в формат приложения
-            final_schedule = {}
-            day_map = {'Пн': 1, 'Вт': 2, 'Ср': 3, 'Чт': 4, 'Пт': 5}
-
-            for class_name in class_groups:
-                class_schedule_result = {}
-                for day in self.DAYS:
-                    day_lessons = []
-                    for slot in range(1, self.MAX_SLOTS + 1):
-                        if class_name in schedule[day][slot]:
-                            lesson_data = schedule[day][slot][class_name]
-                            day_lessons.append({
-                                'subject': lesson_data['subject'],
-                                'teacher': lesson_data['teacher'],
-                                'classroom': lesson_data['classroom']
-                            })
-                        else:
-                            day_lessons.append(None)
-                    class_schedule_result[day_map[day]] = day_lessons
-                final_schedule[class_name] = class_schedule_result
-
-            self.schedule = final_schedule
-            return final_schedule
-        except Exception as e:
-            print(f"Ошибка при генерации расписания: {e}")
-            import traceback
-            traceback.print_exc()
-            return {}
-
-    def try_place_lesson(self, schedule, teacher_schedule, classroom_schedule,
-                         class_schedule, subject_schedule, class_group, day, slot,
-                         teacher, subject):
-        try:
-            # Проверка конфликта предмета
-            if subject in subject_schedule.get((day, slot), set()):
-                return False
-
-            # Проверка занятости учителя
-            if teacher in teacher_schedule and (day, slot) in teacher_schedule[teacher]:
-                return False
-
-            # Поиск свободного кабинета
-            classroom_found = self.find_classroom(day, slot, subject)
-            if not classroom_found:
-                return False
-
-            # Проверка занятости кабинета
-            if classroom_found in classroom_schedule and (day, slot) in classroom_schedule[classroom_found]:
-                return False
-
-            # Размещение урока
-            schedule[day][slot][class_group] = {
-                "subject": subject,
-                "teacher": teacher,
-                "classroom": classroom_found
-            }
-            class_schedule[class_group][day].add(slot)
-
-            if teacher not in teacher_schedule:
-                teacher_schedule[teacher] = {}
-            teacher_schedule[teacher][(day, slot)] = class_group
-
-            if classroom_found not in classroom_schedule:
-                classroom_schedule[classroom_found] = {}
-            classroom_schedule[classroom_found][(day, slot)] = class_group
-
-            if (day, slot) not in subject_schedule:
-                subject_schedule[(day, slot)] = set()
-            subject_schedule[(day, slot)].add(subject)
-
-            return True
-        except Exception as e:
-            print(f"Ошибка в try_place_lesson: {e}")
-            return False
-
-
+            class_count = {c.name: assigned_classes.count(c.name) for c in set(assigned_classes)}
+            for count in class_count.values():
+                if count > 1: 
+                    penalty += (count - 1) * 1000
 class ClassSubjectsDialog(QDialog):
     """Диалоговое окно для добавления предметов в класс"""
 
