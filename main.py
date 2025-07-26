@@ -106,8 +106,8 @@ class Teacher_type:
             return self.type
         else: 
             return self.subjetcs
-    def __eq__(self, name: str = ""):
-        return self.name == name if isinstance(name, str) else False
+    def __eq__(self, type: str = ""):
+        return self.type == type if isinstance(type, str) else False
         
 
 class Subject:
@@ -125,7 +125,7 @@ class Teacher:
     def __init__(self, name: str = "", type: Teacher_type = None):
         self.name = name
         self.type = type
-        self.subjects = self.type()
+        self.subjects = self.type(0)
     def __eq__(self, type: str = ""):
         return self.type == type if isinstance(type, str) else False
 
@@ -151,70 +151,214 @@ class Scheduler:
     MAX_SLOTS = 7  # Максимальное количество уроков в день
     MAX_CLASS_LESSONS_PER_DAY = 8  # Максимум уроков в день для класса
 
+
     def __init__(self):
         self.teachers = []
         self.classrooms = []
         self.subjects = []
         self.classes = []
         self.schedule = {}
-        self.init_enter_value()
 
+        self.num_classes = 0
+        self.num_subjects = 0
+        self.num_teachers = 0
+        self.num_classrooms = 0
+        self.num_days = 0
+        self.num_period = 0
+        self.num_time_slots = 0
+        self.teachers_subjects = {}
+        self.required_lessons = {}
+        self.ind_size = 0
+
+        self.toolbox = base.Toolbox()
+    
     def init_enter_value(self):
-        """Инициализируем входные значения для алгоритма"""
+        """Инициализатор входных данных (переопределение после изменений)"""
         self.num_classes = len(self.classes)
         self.num_subjects = len(self.subjects)
         self.num_teachers = len(self.teachers)
         self.num_classrooms = len(self.classrooms)
         self.num_days = len(self.DAYS)
-        self.num_periods = self.MAX_CLASS_LESSONS_PER_DAY
-        self.num_time_slots = self.num_days * self.num_periods  # 30 временных слотов
-        self.teacher_subjects = {t.name: t.subjects for t in self.teachers} if self.teachers else {}
-        self.required_lessons = {c.name: c.subjects for c in self.classes} if self.classes else {}
+        self.num_period = self.MAX_SLOTS
+        self.num_time_slots = self.num_days * self.num_period # 35
+        # Какие предметы может ввести каждый учитель
+        self.teachers_subjects = {t.name: t.subjects for t in self.teachers}
+        # Требуемое количество уроков для каждого класса по каждому предмету
+        self.required_lessons = {c.name: c.subjects for c in self.classes}
+        # Размер индивидуума
+        self.ind_size = self.num_time_slots * self.num_classrooms
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMin)
-        self.ind_size = self.num_time_slots * self.num_classrooms
-
+        self.init_toolbox()
+        self.init_gen_op()
+    
     def create_individual(self):
-        individual = [(-1, -1, -1)] * self.ind_size
+        individual = [(-1, -1, -1)] * self.ind_size # Изначально все слоты пусты
         lessons_to_schedule = []
+        # Сборка всех необходимых уроков
         for c in self.classes:
-            for s in self.subjects:
-                for _ in range(self.required_lessons[c.name][s.name]):
+            for s in c.subjects:
+                for _ in range(self.required_lessons[c.name][s]):
                     lessons_to_schedule.append((c, s))
         random.shuffle(lessons_to_schedule)
-        # Распределяем уроки по слотам
+        # Расределение уроков по слотам
         used_slots = set()
         for c, s in lessons_to_schedule:
-            possible_teachers = [t for t in self.teachers if s in self.teacher_subjects[t.name]]
+            possible_teachers = [t for t in self.teachers if s in t.subjects]
             if not possible_teachers:
-                continue
-            t = random.choice(self.possible_teachers)
-            for _ in range(500):
-                slot = random.choice(0, self.ind_size - 1)
+                continue # Пропуск если нет подходящих учителей
+            t = random.choice(possible_teachers)
+            for _ in range(500): # Органичени попыток размещения
+                slot = random.randint(0, self.ind_size - 1)
                 if slot not in used_slots:
                     individual[slot] = (c, s, t)
                     used_slots.add(slot)
                     break
+
         return individual
-    
-    def toolbox_init(self):
-        self.toolbox = base.Toolbox()
+    def init_toolbox(self):
         self.toolbox.register("individual", tools.initIterate, creator.Individual, self.create_individual)
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
 
-    def evalute(self, individual: tuple[int, int, int]):
+    def evaluate(self, individual):
         penalty = 0
+        # Преобразование индивидуума в расписание: time_slot x rooms
         schedule = [individual[i * self.num_classrooms:(i + 1) * self.num_classrooms] for i in range(self.num_time_slots)]
 
+        # Проверка конфликтов
         for t in range(self.num_time_slots):
-            assigments = [a for a in schedule[t] if a != (-1, -1, -1)]
-            assigned_classes = [a[0] for a in assigments]
-            assigned_teachers = [a[2] for a in assigments]
-
-            class_count = {c.name: assigned_classes.count(c.name) for c in set(assigned_classes)}
-            for count in class_count.values():
-                if count > 1: 
+            assignments = [a for a in schedule[t] if a != (-1, -1, -1)]
+            assigned_classes = [a[0].name for a in assignments]
+            assigned_teachers = [a[2].name for a in assignments]
+            # Конфликты классов
+            class_counts = {c: assigned_classes.count(c) for c in set(assigned_classes)}
+            for count in class_counts.values():
+                if count > 1:
                     penalty += (count - 1) * 1000
+            # Конфликты учителей
+            teacher_counts = {t: assigned_teachers.count(t) for t in set(assigned_teachers)}
+            for count in teacher_counts.values():
+                if count > 1:
+                    penalty += (count - 1) * 1000
+
+        for c in self.classes:
+            class_lessons = [a[1] for ts in schedule for a in ts if a != (-1, -1, -1) and a[0].name == c.name]
+            for s in c.subjects:
+                required = self.required_lessons[c.name][s]
+                actual = class_lessons.count(s)
+                penalty += abs(required - actual) * 100 # Штраф за несоответствие
+        for c in self.classes:
+            for day in range(self.num_days):
+                day_slots = range(day * self.num_period, (day + 1) * self.num_period)
+                class_day_schedule = [any(a[0] == c.name and a != (-1, -1, -1) for a in schedule[ts]) for ts in day_slots]
+                if any(class_day_schedule):
+                    first_lessons = class_day_schedule.index(True)
+                    last_lessons = len(class_day_schedule) - 1 - class_day_schedule[::-1].index(True)
+                    gaps = sum(1 for i in range(first_lessons + 1, last_lessons) if not class_day_schedule[i])
+                    penalty += gaps * 10
+        for t in self.teachers:
+            for day in range(self.num_days):
+                day_slots = range(day * self.num_period, (day + 1) * self.num_period)
+                teacher_day_schedule = [any(a[2] == t.name and a != (-1, -1, -1) for a in schedule[ts]) for ts in day_slots]
+                if any(class_day_schedule):
+                    first_lessons = class_day_schedule.index(True)
+                    last_lessons = len(class_day_schedule) - 1 - class_day_schedule[::-1].index(True)
+                    gaps = sum(1 for i in range(first_lessons + 1, last_lessons) if not teacher_day_schedule[i])
+                    penalty += gaps * 2
+        return penalty,
+    
+    def init_gen_op(self):
+        self.toolbox.register("evaluate", self.evaluate)
+        self.toolbox.register("mate", tools.cxTwoPoint)
+        self.toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
+        self.toolbox.register("select", tools.selTournament, tournsize=3)
+    
+    def generate(self):
+        """Основной метод для генерации расписания"""
+        # Проверяем наличие необходимых данных
+        if not all([self.classes, self.subjects, self.teachers, self.classrooms]):
+            return {}
+        
+        # Инициализируем параметры
+        self.init_enter_value()
+        
+        # Проверка корректности размеров данных
+        if self.ind_size == 0:
+            return {}
+        
+        # Запускаем генетический алгоритм
+        random.seed(42)
+        pop = self.toolbox.population(n=200)
+        hof = tools.HallOfFame(1)
+        stats = tools.Statistics(lambda ind: ind.fitness.values)
+        stats.register("min", np.min)
+        pop, log = algorithms.eaSimple(
+            pop, 
+            self.toolbox, 
+            cxpb=0.7, 
+            mutpb=0.2, 
+            ngen=100, 
+            stats=stats, 
+            halloffame=hof, 
+            verbose=True
+        )
+        
+        best_schedule = hof[0]
+        print(f"Лучшее значение фитнеса: {best_schedule.fitness.values[0]}")
+        
+        # Декодируем расписание в нужный формат
+        schedule = self.decode_schedule(best_schedule)
+        self.schedule = schedule  # Сохраняем для последующего использования
+        return schedule
+
+    def decode_schedule(self, individual):
+        """Преобразование индивидуума в расписание для классов"""
+        schedule = {}
+        # Инициализируем структуру для каждого класса
+        for cls in self.classes:
+            schedule[cls.name] = {day: [] for day in range(1, self.num_days + 1)}
+        
+        # Разбиваем индивидуум на временные слоты
+        time_slots = [
+            individual[i * self.num_classrooms : (i + 1) * self.num_classrooms]
+            for i in range(self.num_time_slots)
+        ]
+        
+        # Обработка каждого временного слота
+        for ts in range(self.num_time_slots):
+            day = ts // self.num_period + 1
+            period = ts % self.num_period + 1
+            
+            for room_idx, assignment in enumerate(time_slots[ts]):
+                if assignment == (-1, -1, -1):
+                    continue
+                
+                cls, subj, tch = assignment
+                class_name = cls.name
+                classroom = self.classrooms[room_idx].number
+                
+                lesson_info = {
+                    "subject": subj,
+                    "teacher": tch,
+                    "classroom": classroom,
+                    "period": period
+                }
+                
+                # Добавляем урок в расписание класса
+                if class_name in schedule and day in schedule[class_name]:
+                    schedule[class_name][day].append(lesson_info)
+        
+        # Сортировка уроков по времени для каждого дня
+        for class_name in schedule:
+            for day in schedule[class_name]:
+                schedule[class_name][day].sort(key=lambda x: x["period"])
+                # Удаляем поле периода, так как порядок теперь правильный
+                for lesson in schedule[class_name][day]:
+                    if "period" in lesson:
+                        del lesson["period"]
+        
+        return schedule
+
 class ClassSubjectsDialog(QDialog):
     """Диалоговое окно для добавления предметов в класс"""
 
@@ -708,9 +852,15 @@ class MainWindow(QMainWindow):
                     QMessageBox.warning(self, "Ошибка", f"Класс {cls.name} не имеет предметов!")
                     return
 
-            schedule = self.scheduler.generate_schedule()
+            # ВЫЗЫВАЕМ МЕТОД GENERATE У ПЛАНИРОВЩИКА
+            schedule = self.scheduler.generate()
+            
+            # Проверяем, что расписание сгенерировано
+            if not schedule:
+                QMessageBox.warning(self, "Ошибка", "Не удалось сгенерировать расписание")
+                return
+                
             self.schedule_table.setRowCount(len(self.scheduler.classes))
-
             days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
 
             for row, class_name in enumerate(schedule.keys()):
@@ -718,19 +868,16 @@ class MainWindow(QMainWindow):
                 self.schedule_table.setItem(row, 0, QTableWidgetItem(class_name))
 
                 for col in range(1, 8):  # колонки 1-7: дни недели
-                    if col <= 5:
-                        # Получаем расписание для текущего дня
-                        day_lessons = class_schedule.get(col, [])
+                    day_index = col  # день как целое число
+                    if day_index <= 5:  # только рабочие дни (1-5)
+                        day_lessons = class_schedule.get(day_index, [])
                         lesson_lines = []
 
-                        # Формируем список уроков с указанием времени и кабинета
-                        for slot_index, lesson in enumerate(day_lessons):
-                            if lesson:
-                                # Добавляем информацию об уроке
-                                lesson_info = f"{slot_index + 1}. {lesson['subject']}"
-                                if lesson.get('classroom'):
-                                    lesson_info += f" ({lesson['classroom']})"
-                                lesson_lines.append(lesson_info)
+                        for lesson in day_lessons:
+                            lesson_info = f"{lesson['subject']}"
+                            if lesson.get('classroom'):
+                                lesson_info += f" ({lesson['classroom']})"
+                            lesson_lines.append(lesson_info)
 
                         lessons_str = "\n".join(lesson_lines) if lesson_lines else "Нет уроков"
                     else:
@@ -799,6 +946,7 @@ class MainWindow(QMainWindow):
 
             except Exception as e:
                 QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить данные: {str(e)}")
+            self.scheduler.init_enter_value()
 
     def export_schedule(self):
         if not self.scheduler.schedule:
@@ -824,7 +972,7 @@ class MainWindow(QMainWindow):
                             for slot_index, lesson in enumerate(lessons):
                                 if lesson:
                                     f.write(
-                                        f"{slot_index + 1}. {lesson['subject']} (Учитель: {lesson['teacher']}, Кабинет: {lesson['classroom']})\n")
+                                        f"{slot_index + 1}. {lesson['subject']} (Учитель: {lesson['teacher'].name}, Кабинет: {lesson['classroom']})\n")
                                 else:
                                     f.write(f"{slot_index + 1}. ---\n")
 
@@ -837,6 +985,9 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
+    test_sheduler = Scheduler()
+    test_sheduler.init_enter_value()
+    print(test_sheduler)
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
