@@ -49,7 +49,7 @@ def create_individual():
         if not possible_teachers:
             continue  # Пропускаем, если нет подходящего учителя
         t = random.choice(possible_teachers)
-        for _ in range(100):  # Ограничение попыток
+        for _ in range(500):  # Ограничение попыток
             slot = random.randint(0, IND_SIZE - 1)
             if slot not in used_slots:
                 individual[slot] = (c, s, t)
@@ -125,11 +125,11 @@ toolbox.register("select", tools.selTournament, tournsize=3)
 # Запуск алгоритма
 def main():
     random.seed(42)
-    pop = toolbox.population(n=100)
+    pop = toolbox.population(n=500)
     hof = tools.HallOfFame(1)
     stats = tools.Statistics(lambda ind: ind.fitness.values)
     stats.register("min", np.min)
-    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.7, mutpb=0.2, ngen=50, 
+    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.7, mutpb=0.2, ngen=300, 
                                    stats=stats, halloffame=hof, verbose=True)
 
     best_schedule = hof[0]
