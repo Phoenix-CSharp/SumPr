@@ -985,10 +985,9 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    test_sheduler = Scheduler()
-    test_sheduler.init_enter_value()
-    print(test_sheduler)
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
+    while input() != 'q':
+        pass
