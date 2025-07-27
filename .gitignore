@@ -1,2 +1,9 @@
-/.txt
-
+/*.txt
+/*.spec
+/*.ico
+/*.docx
+/*.pdf
+/dist/*
+/build/*
+/.idea/*
+/.venv/*
