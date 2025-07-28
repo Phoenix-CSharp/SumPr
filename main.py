@@ -2,6 +2,7 @@
 import sys
 import json
 import random
+from time import perf_counter
 from collections import defaultdict
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QTableWidget, QTableWidgetItem, QLabel, QLineEdit,
@@ -12,11 +13,19 @@ from PyQt5.QtGui import QFont
 
 # импорты для генетического алгоритма
 from deap import base, creator, tools, algorithms
-import random
 import numpy as np
-import json
 import pandas as pd
 from tabulate import tabulate
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start = perf_counter()
+        result = func(*args, **kwargs)
+        end = perf_counter()
+        time = end - start
+        print(f"Успех! Время генерации расписания: {time:.3f} сек.")
+        return result, time
+    return wrapper
 
 
 class Class_range:
@@ -272,8 +281,8 @@ class Scheduler:
         self.toolbox.register("mate", tools.cxTwoPoint)
         self.toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
         self.toolbox.register("select", tools.selTournament, tournsize=3)
-    
-    def generate(self):
+    @timer
+    def generate(self, seed=42, n_pop=200, n_gen=100):
         """Основной метод для генерации расписания"""
         # Проверяем наличие необходимых данных
         if not all([self.classes, self.subjects, self.teachers, self.classrooms]):
@@ -287,8 +296,8 @@ class Scheduler:
             return {}
         
         # Запускаем генетический алгоритм
-        random.seed(42)
-        pop = self.toolbox.population(n=200)
+        random.seed(seed)
+        pop = self.toolbox.population(n=n_pop)
         hof = tools.HallOfFame(1)
         stats = tools.Statistics(lambda ind: ind.fitness.values)
         stats.register("min", np.min)
@@ -297,7 +306,7 @@ class Scheduler:
             self.toolbox, 
             cxpb=0.7, 
             mutpb=0.2, 
-            ngen=100, 
+            ngen=n_gen, 
             stats=stats, 
             halloffame=hof, 
             verbose=True
@@ -483,6 +492,11 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.help_tab, "Помощь")
         self.init_help_tab()
 
+        # Вкладка настроки
+        self.setting_tab = QWidget()
+        self.tabs.addTab(self.setting_tab, "Настройка алгоритма")
+        self.init_setting_tab()
+
         # Создание меню
         menubar = self.menuBar()
         file_menu = menubar.addMenu("Файл")
@@ -500,6 +514,9 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Готово")
 
     def init_schedule_tab(self):
+        """
+            Инициализация вкладки с расписанием
+        """
         layout = QVBoxLayout()
 
         # Кнопки управления
@@ -526,6 +543,9 @@ class MainWindow(QMainWindow):
         self.schedule_tab.setLayout(layout)
 
     def init_classes_tab(self):
+        """
+            Инициализация вкладки с классами
+        """
         layout = QVBoxLayout()
 
         # Форма добавления класса
@@ -551,6 +571,9 @@ class MainWindow(QMainWindow):
         self.classes_tab.setLayout(layout)
 
     def init_subjects_tab(self):
+        """
+            Инициализация вкладки с предметами
+        """
         layout = QVBoxLayout()
 
         # Форма добавления предмета
@@ -594,6 +617,9 @@ class MainWindow(QMainWindow):
         self.subjects_tab.setLayout(layout)
 
     def init_teachers_tab(self):
+        """
+            Инициализация вкладки с учителями
+        """
         layout = QVBoxLayout()
 
         # Форма добавления учителя
@@ -629,6 +655,9 @@ class MainWindow(QMainWindow):
         self.teachers_tab.setLayout(layout)
 
     def init_classrooms_tab(self):
+        """
+            Инициализация вкладки с кабинетами
+        """
         layout = QVBoxLayout()
 
         # Форма добавления кабинета
@@ -661,6 +690,9 @@ class MainWindow(QMainWindow):
         self.classrooms_tab.setLayout(layout)
 
     def init_help_tab(self):
+        """
+            Инициализация вкладки с кратким руководством
+        """
         layout = QVBoxLayout()
 
         help_text = """
@@ -701,7 +733,37 @@ class MainWindow(QMainWindow):
         layout.addWidget(help_label)
         self.help_tab.setLayout(layout)
 
+    def init_setting_tab(self):
+        layout = QVBoxLayout()
+
+        form_layout = QGridLayout()
+
+        self.seed_spin = QSpinBox()
+        self.seed_spin.setRange(1,1000)
+        self.seed_spin.setValue(42)
+        form_layout.addWidget(QLabel("Сид генерации:"), 0, 0)
+        form_layout.addWidget(self.seed_spin, 0, 1)
+
+        self.gen_spin = QSpinBox()
+        self.gen_spin.setRange(10, 1000)
+        self.gen_spin.setValue(50)
+        form_layout.addWidget(QLabel("Количество поколений алгоритма:"), 1, 0)
+        form_layout.addWidget(self.gen_spin, 1, 1)
+
+        self.pop_spin = QSpinBox()
+        self.pop_spin.setRange(100, 10000)
+        self.pop_spin.setValue(200)
+        form_layout.addWidget(QLabel("Количество особей в поколении:"), 2, 0)
+        form_layout.addWidget(self.pop_spin, 2, 1)
+
+        layout.addLayout(form_layout)
+
+        self.setting_tab.setLayout(layout)
+
     def update_tables(self):
+        """
+            Функция обновления данных в таблицах
+        """
         # Обновление таблицы классов
         self.classes_table.setRowCount(len(self.scheduler.classes))
         for i, cls in enumerate(self.scheduler.classes):
@@ -751,6 +813,9 @@ class MainWindow(QMainWindow):
             self.classrooms_table.setCellWidget(i, 2, btn)
 
     def add_class(self):
+        """
+            функция добавления класса в список
+        """
         name = self.class_name_input.text().strip()
         if name and (int("".join([s for s in name if s in "0123456789"])) > 0):
             # Создаем класс с пустым списком предметов
@@ -762,6 +827,9 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Ошибка", "Введите корректное название класса")
 
     def add_subject(self):
+        """
+            функция добавления предмета в список
+        """
         name = self.subject_name_input.currentText() if self.subject_name_input.currentText() != "" else None
         room_type = self.room_type_input.currentText()
         class_rng = self.class_range_input.currentText()
@@ -777,6 +845,9 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Ошибка", "Выберете название предмета")
 
     def add_teacher(self):
+        """
+            функция добавления учителя в список
+        """
         name = self.teacher_name_input.text().strip()
         teacher_type = Teacher_type(self.teacher_type_input.currentText())
         subjects = teacher_type.subjetcs
@@ -801,6 +872,9 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"Добавлен учитель: {name}")
 
     def add_classroom(self):
+        """
+            функция добавления кабинета в список
+        """
         number = self.classroom_number_input.text().strip()
         room_type = self.classroom_type_input.currentText()
 
@@ -842,6 +916,7 @@ class MainWindow(QMainWindow):
 
     def generate_schedule(self):
         try:
+            self.statusBar().showMessage("Генерация рассписания ...")
             if not self.scheduler.classes:
                 QMessageBox.warning(self, "Ошибка", "Добавьте хотя бы один класс")
                 return
@@ -851,15 +926,21 @@ class MainWindow(QMainWindow):
                 if not cls.subjects:
                     QMessageBox.warning(self, "Ошибка", f"Класс {cls.name} не имеет предметов!")
                     return
+                
+            seed = self.seed_spin.value()
+            n_gen = self.gen_spin.value()
+            n_pop = self.pop_spin.value()
 
             # ВЫЗЫВАЕМ МЕТОД GENERATE У ПЛАНИРОВЩИКА
-            schedule = self.scheduler.generate()
+            schedule, time = self.scheduler.generate(seed=seed, n_pop=n_pop, n_gen=n_gen)
             
             # Проверяем, что расписание сгенерировано
             if not schedule:
-                QMessageBox.warning(self, "Ошибка", "Не удалось сгенерировать расписание")
+                QMessageBox.warning(self, "Ошибка", f"Не удалось сгенерировать расписание\nВремя выполенения: {time} сек.")
                 return
-                
+            else:
+                QMessageBox.information(self, "Успех", f"Время генерации расписания: {time} сек.")
+
             self.schedule_table.setRowCount(len(self.scheduler.classes))
             days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
 
